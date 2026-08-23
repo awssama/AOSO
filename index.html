@@ -112,7 +112,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1100;background:rgba(14,13,16,.8
 .nav-links a:hover{color:var(--paper)}
 .nav-cta{border:1px solid var(--line2);padding:7px 16px;border-radius:3px;color:var(--paper)!important;transition:.25s}
 .nav-cta:hover{border-color:var(--ember);color:var(--ember)!important}
-#langBtn{background:none;border:1px solid var(--line2);color:var(--mut);padding:5px 13px;border-radius:3px;cursor:pointer;font-size:.82rem;font-family:inherit}
+#langBtn{background:none;border:1px solid var(--line2);color:var(--mut);padding:6px 14px;border-radius:3px;cursor:pointer;font-size:.85rem;font-weight:600;font-family:inherit;min-width:52px;transition:.25s}
+#langBtn:hover{color:var(--ember);border-color:var(--ember-dim)}
 #langBtn:hover{color:var(--paper);border-color:var(--mut)}
 #burger{display:none;background:none;border:1px solid var(--line2);color:var(--paper);padding:5px 12px;border-radius:3px;cursor:pointer;font-size:1rem;margin-inline-start:auto}
 
@@ -614,7 +615,7 @@ html[dir="rtl"] #adminFab{left:auto;right:20px}
       <a href="#news" data-ar="الأخبار">News</a>
       <a class="nav-cta" href="https://www.webnovel.com/book/aoso_36161231808434505" target="_blank" rel="noopener" data-ar="اقرأ الآن">READ NOW</a>
     </div>
-    <button id="langBtn">ع</button>
+    <button id="langBtn" title="العربية">عربي</button>
   </div>
 </nav>
 
@@ -707,8 +708,8 @@ html[dir="rtl"] #adminFab{left:auto;right:20px}
       <div class="ctas"><a class="btn btn-line" href="#order" data-ar="اطلب نسختك ↓">Order yours ↓</a></div>
     </div>
     <div class="books-shelf">
-      <div class="book"><img src="cover_s1.jpg" alt="AOSO Season I — وسط الرماد paperback cover" loading="lazy"><div class="bk-meta"><b data-ar="وسط الرماد">AMID THE ASHES</b><span data-ar="الموسم الأول · غلاف مقوى">Season I · Hardcover</span></div></div>
-      <div class="book"><img src="cover_s2.jpg" alt="AOSO Season II — قلب العدم paperback cover" loading="lazy"><div class="bk-meta"><b data-ar="قلب العدم">HEART OF NIHILISM</b><span data-ar="الموسم الثاني · غلاف مقوى">Season II · Hardcover</span></div></div>
+      <div class="book"><img src="cover_s1.jpg?v=2" alt="AOSO Season I — وسط الرماد paperback cover" loading="lazy"><div class="bk-meta"><b data-ar="وسط الرماد">AMID THE ASHES</b><span data-ar="الموسم الأول · غلاف مقوى">Season I · Hardcover</span></div></div>
+      <div class="book"><img src="cover_s2.jpg?v=2" alt="AOSO Season II — قلب العدم paperback cover" loading="lazy"><div class="bk-meta"><b data-ar="قلب العدم">HEART OF NIHILISM</b><span data-ar="الموسم الثاني · غلاف مقوى">Season II · Hardcover</span></div></div>
     </div>
   </div>
 </section>
@@ -1087,7 +1088,7 @@ function setLang(ar){
   });
   const h=document.documentElement;
   h.classList.toggle('lang-ar',ar);h.setAttribute('dir',ar?'rtl':'ltr');h.setAttribute('lang',ar?'ar':'en');
-  document.getElementById('langBtn').textContent=ar?'EN':'ع';
+  document.getElementById('langBtn').textContent=ar?'EN':'عربي';
 }
 
 /* ---------- nav + language toggle ---------- */
