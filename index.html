@@ -7,7 +7,7 @@
 <meta name="description" content="The official home of AOSO, the dark-fantasy saga by Aws Alrammahi. Two seasons, an anime fund, original soundtrack, and print editions.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cairo:wght@300;400;600;700&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Cairo:wght@300;400;600;700&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <style>
 /* ============================================================
    AOSO — design system v2 (editorial / human-crafted)
@@ -15,6 +15,7 @@
    blood red reserved for the anime fund only.
 ============================================================ */
 :root{
+  --disp:'Cormorant Garamond','Cinzel',serif;
   --ink:#0e0d10; --ink2:#141317; --paper:#ece7dd; --mut:#98938c; --faint:#615c57;
   --line:#26242a; --line2:#37343c;
   --ember:#d9a441; --ember-dim:#8a6a2b;
@@ -31,15 +32,64 @@ html.lang-ar h1,html.lang-ar h2,html.lang-ar h3,html.lang-ar h4,html.lang-ar .di
 .ar{font-family:'Amiri',serif;color:var(--mut)}
 img{max-width:100%;display:block}
 a{color:inherit;text-decoration:none}
-section{scroll-margin-top:76px}
+section{scroll-margin-top:70px}
 .wrap{max-width:1180px;margin:0 auto;padding:0 clamp(18px,4vw,44px)}
 ::selection{background:rgba(217,164,65,.35)}
 ::-webkit-scrollbar{width:11px}::-webkit-scrollbar-track{background:#0a090c}::-webkit-scrollbar-thumb{background:#2b2830;border-radius:8px;border:2px solid #0a090c}
+
+.side-note p{font-size:.85rem;color:var(--mut)}
+.side-cta{display:inline-block;margin-top:14px;font-size:.8rem;letter-spacing:.18em;text-transform:uppercase;color:var(--ember);border-bottom:1px solid rgba(217,164,65,.35);padding-bottom:3px;transition:.25s}
+.side-cta:hover{color:#e6b458;border-color:var(--ember)}
 
 /* ---------- micro utilities ---------- */
 .kicker{font-size:.72rem;letter-spacing:.34em;color:var(--mut);text-transform:uppercase;display:flex;align-items:center;gap:14px}
 .kicker::after{content:"";height:1px;flex:1;background:var(--line)}
 .num{font-family:'Cinzel',serif;color:var(--ember-dim)}
+
+
+
+/* active nav link on scroll */
+(function(){
+  const links=[...document.querySelectorAll('.nav-links a[href^="#"]')];
+  const secs=links.map(a=>document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  function upd(){
+    const y=innerHeight*.35;let cur=null;
+    secs.forEach(sec=>{if(sec.getBoundingClientRect().top<=y)cur=sec.id});
+    links.forEach(a=>a.style.color=a.getAttribute('href')==='#'+cur?'var(--paper)':'');
+  }
+  addEventListener('scroll',upd,{passive:true});upd();
+})();
+
+/* image fade-in */
+document.querySelectorAll('img').forEach(im=>{
+  if(im.complete&&im.naturalWidth>0)im.classList.add('ld');
+  else im.addEventListener('load',()=>im.classList.add('ld'));
+});
+
+
+/* goal milestones 25/50/75 */
+(function(){
+  const bar=document.querySelector('.goalbar');
+  if(!bar)return;
+  [25,50,75].forEach(p=>{
+    const m=document.createElement('div');m.className='mk';
+    m.style.insetInlineStart=p+'%';
+    m.innerHTML='<span>'+p+'%</span>';
+    bar.appendChild(m);
+  });
+})();
+
+
+/* back-to-top button appears after hero */
+(function(){
+  const b=document.createElement('button');
+  b.id='topBtn';b.setAttribute('aria-label','back to top');
+  b.innerHTML='↑';
+  document.body.appendChild(b);
+  const upd=()=>{b.classList.toggle('show',document.documentElement.scrollTop>innerHeight*1.2)};
+  addEventListener('scroll',upd,{passive:true});
+  b.onclick=()=>scrollTo({top:0,behavior:'smooth'});
+})();
 
 /* ---------- loader ---------- */
 #loader{position:fixed;inset:0;z-index:9999;background:#0a090c;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;transition:opacity .6s ease,visibility .6s}
@@ -55,7 +105,7 @@ html[dir="rtl"] #progress{left:auto;right:0}
 
 /* ---------- nav ---------- */
 nav{position:fixed;top:0;left:0;right:0;z-index:1100;background:rgba(14,13,16,.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
-.nav-in{max-width:1180px;margin:0 auto;padding:15px clamp(18px,4vw,44px);display:flex;align-items:center;gap:24px}
+.nav-in{max-width:1180px;margin:0 auto;padding:12px clamp(18px,4vw,44px);display:flex;align-items:center;gap:24px}
 .logo{font-family:'Cinzel',serif;font-weight:900;letter-spacing:.3em;font-size:1.05rem;color:var(--paper)}
 .logo em{font-style:normal;color:var(--ember)}
 .nav-links{display:flex;gap:22px;margin-inline-start:auto;font-size:.86rem;color:var(--mut)}
@@ -67,16 +117,20 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1100;background:rgba(14,13,16,.8
 #burger{display:none;background:none;border:1px solid var(--line2);color:var(--paper);padding:5px 12px;border-radius:3px;cursor:pointer;font-size:1rem;margin-inline-start:auto}
 
 /* ---------- hero : split editorial ---------- */
-.hero{min-height:100svh;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,.7fr);position:relative;border-bottom:1px solid var(--line)}
-.hero-main{display:flex;flex-direction:column;justify-content:flex-end;padding:130px clamp(18px,4vw,44px) 64px;position:relative}
-.hero-side{border-inline-start:1px solid var(--line);padding:130px clamp(18px,3vw,40px) 64px;display:flex;flex-direction:column;justify-content:flex-end;gap:26px;background:linear-gradient(180deg,transparent,rgba(217,164,65,.03))}
+.hero{min-height:100svh;display:grid;grid-template-columns:minmax(0,1.55fr) minmax(280px,.7fr);position:relative;border-bottom:1px solid var(--line);background:
+ radial-gradient(1200px 500px at 82% -10%,rgba(217,164,65,.07),transparent 60%),
+ radial-gradient(900px 480px at -8% 108%,rgba(179,29,40,.08),transparent 60%),var(--ink)}
+.hero::after{content:"";position:absolute;inset:0;pointer-events:none;
+ background:radial-gradient(120% 90% at 50% 42%,transparent 55%,rgba(0,0,0,.5) 100%)}
+.hero-main{display:flex;flex-direction:column;justify-content:center;padding:120px clamp(18px,5vw,64px) 90px;position:relative}
+.hero-side{border-inline-start:1px solid var(--line);padding:120px clamp(18px,3vw,44px) 90px;display:flex;flex-direction:column;justify-content:center;gap:22px;background:linear-gradient(180deg,transparent,rgba(217,164,65,.04));backdrop-filter:blur(2px)}
 .embers{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .ember{position:absolute;bottom:-10px;width:3px;height:3px;border-radius:50%;background:#c77b33;box-shadow:0 0 7px 2px rgba(199,123,51,.45);animation:rise linear infinite}
 @keyframes rise{0%{transform:translateY(0);opacity:0}10%{opacity:.7}100%{transform:translate(var(--dx,0),-92vh);opacity:0}}
-.overline{font-size:.74rem;letter-spacing:.4em;color:var(--ember);text-transform:uppercase;margin-bottom:18px}
-.hero h1{font-size:clamp(4rem,13vw,9.5rem);font-weight:900;color:var(--paper);line-height:.95;margin-inline-start:-.04em}
+.overline{font-size:.72rem;letter-spacing:.46em;color:var(--ember);text-transform:uppercase;margin-bottom:20px}
+.hero h1{font-family:var(--disp);font-weight:600;font-size:clamp(4.6rem,14.5vw,11.5rem);color:var(--paper);line-height:.88;margin-inline-start:-.03em;letter-spacing:-.015em;background:linear-gradient(175deg,#f6f1e7 30%,#cfc6b6 62%,#8d8577 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-shadow:none}
 .hero .arn-title{font-family:'Amiri',serif;font-size:clamp(1.15rem,2.4vw,1.6rem);color:var(--mut);margin-top:6px}
-.hero-tag{max-width:520px;margin-top:26px;color:var(--mut);font-size:1.02rem}
+.hero-tag{max-width:520px;margin-top:28px;color:var(--mut);font-size:clamp(1rem,1.6vw,1.15rem);line-height:1.75;font-family:var(--disp);font-style:italic;font-weight:500}
 .season-chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:30px}
 .chip{border:1px solid var(--line2);padding:8px 16px;font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;color:var(--mut)}
 .chip b{color:var(--paper);font-weight:600}
@@ -97,7 +151,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1100;background:rgba(14,13,16,.8
 /* ---------- section shell : left-aligned editorial ---------- */
 .sec{padding:clamp(70px,9vw,120px) 0;border-bottom:1px solid var(--line)}
 .sec-head{max-width:1180px;margin:0 auto clamp(36px,5vw,60px);padding:0 clamp(18px,4vw,44px)}
-.sec-head h2{font-size:clamp(1.7rem,4vw,2.7rem);color:var(--paper);margin-top:16px}
+.sec-head h2{font-family:var(--disp);font-weight:600;font-size:clamp(2rem,4.8vw,3.3rem);line-height:1.05;letter-spacing:-.01em;color:var(--paper);margin-top:16px;text-wrap:balance}
 .sec-head p.sub{color:var(--mut);max-width:640px;margin-top:12px;font-size:1rem}
 
 /* ---------- story ---------- */
@@ -122,10 +176,12 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1100;background:rgba(14,13,16,.8
 /* ---------- season bands ---------- */
 .band{border-bottom:1px solid var(--line)}
 .band-head{max-width:1180px;margin:0 auto;padding:clamp(60px,8vw,100px) clamp(18px,4vw,44px) 40px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:clamp(20px,4vw,54px);align-items:end}
+.band{position:relative}
+.band-num-wrap{position:absolute;inset-inline-end:clamp(10px,3vw,40px);top:50%;transform:translateY(-50%);pointer-events:none}
 .band-num{font-family:'Cinzel',serif;font-weight:900;font-size:clamp(4.4rem,11vw,8.5rem);line-height:.8;color:transparent;-webkit-text-stroke:1px var(--line2)}
 .s1-band .band-num{-webkit-text-stroke-color:#4a4640}
 .s2-band .band-num{-webkit-text-stroke-color:#3f3a52}
-.band-head h2{font-size:clamp(1.9rem,4.6vw,3.1rem);color:var(--paper)}
+.band-head h2{font-family:var(--disp);font-weight:600;font-size:clamp(2.1rem,5vw,3.6rem);letter-spacing:-.005em;line-height:1.02;color:var(--paper)}
 .band-head .arn-band{font-family:'Amiri',serif;color:var(--mut);font-size:1.05rem;margin-top:4px}
 .band-head p{color:var(--mut);margin-top:14px;max-width:620px;font-size:.98rem}
 .band-meta{display:inline-flex;align-items:center;gap:9px;margin-bottom:12px;font-size:.72rem;letter-spacing:.3em;text-transform:uppercase;color:var(--ember)}
@@ -136,10 +192,14 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1100;background:rgba(14,13,16,.8
 .beats{max-width:1180px;margin:0 auto;padding:0 clamp(18px,4vw,44px) clamp(60px,8vw,96px)}
 .beat-row{display:grid;grid-template-columns:90px minmax(0,.9fr) minmax(0,1.35fr);gap:clamp(14px,3vw,40px);padding:26px 6px;border-top:1px solid var(--line);transition:background .3s;position:relative}
 .beat-row:last-child{border-bottom:1px solid var(--line)}
+.beat-row{position:relative}
+.beat-row::after{content:"";position:absolute;top:-1px;left:0;height:1px;width:0;background:linear-gradient(90deg,var(--ember),transparent);transition:width .7s cubic-bezier(.2,.7,.2,1)}
+.s2-zone .beat-row::after{background:linear-gradient(90deg,var(--w-korz),transparent)}
+.beat-row:hover::after{width:100%}
 .beat-row:hover{background:rgba(255,255,255,.02)}
-.beat-row .bn{font-family:'Cinzel',serif;font-size:2rem;color:var(--faint);line-height:1;transition:.3s}
-.beat-row:hover .bn{color:var(--ember)}
-.s2-zone .beat-row:hover .bn{color:var(--w-korz)}
+.beat-row .bn{font-family:var(--disp);font-style:italic;font-weight:500;font-size:2.4rem;color:#4a463f;line-height:1;transition:.35s}
+.beat-row:hover .bn{color:var(--ember);text-shadow:0 0 24px rgba(217,164,65,.35)}
+.s2-zone .beat-row:hover .bn{color:var(--w-korz);text-shadow:0 0 24px rgba(143,122,232,.35)}
 .beat-row h3{font-size:1.08rem;color:var(--paper);padding-top:4px}
 .beat-row .ba{font-family:'Amiri',serif;color:var(--faint);font-size:.92rem;display:block;margin-top:2px}
 .beat-row p{color:var(--mut);font-size:.93rem;padding-top:6px}
@@ -151,9 +211,12 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1100;background:rgba(14,13,16,.8
 .books-copy h2{font-size:clamp(1.7rem,4vw,2.6rem);color:var(--paper);margin:14px 0 16px}
 .books-copy p{color:var(--mut);max-width:480px}
 .books-shelf{display:flex;gap:clamp(18px,3vw,34px);align-items:flex-end}
-.book{position:relative;width:min(210px,38vw);transition:transform .4s cubic-bezier(.2,.7,.2,1)}
+.book{position:relative;width:min(220px,40vw);transition:transform .5s cubic-bezier(.2,.7,.2,1);transform-style:preserve-3d;perspective:900px}
 .book img{box-shadow:0 30px 60px rgba(0,0,0,.6)}
-.book:hover{transform:translateY(-10px)}
+.book:hover{transform:translateY(-14px) rotateX(4deg)}
+.book::before{content:"";position:absolute;inset:0 auto 0 0;width:10px;background:linear-gradient(90deg,rgba(0,0,0,.55),transparent);border-radius:6px 0 0 6px;pointer-events:none}
+.book img{transition:box-shadow .5s}
+.book:hover img{box-shadow:-24px 34px 70px rgba(0,0,0,.7),0 0 44px rgba(217,164,65,.16)}
 .bk-meta{margin-top:14px}
 .bk-meta b{display:block;font-family:'Cinzel',serif;color:var(--paper);font-size:.95rem}
 .bk-meta span{font-size:.76rem;color:var(--mut)}
@@ -161,8 +224,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1100;background:rgba(14,13,16,.8
 
 /* ---------- quotes ---------- */
 .quotes2{max-width:1180px;margin:0 auto;padding:clamp(60px,8vw,96px) clamp(18px,4vw,44px);display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
-.qcell{background:var(--ink);padding:clamp(28px,4vw,48px)}
-.qcell p{font-family:'Amiri',Georgia,serif;font-style:italic;font-size:clamp(1.15rem,2.2vw,1.45rem);line-height:1.7;color:var(--paper)}
+.qcell{background:var(--ink);padding:clamp(28px,4vw,48px);position:relative}
+.qcell::before{content:"\201C";position:absolute;top:14px;inset-inline-start:22px;font-family:'Amiri',Georgia,serif;font-size:5rem;line-height:1;color:rgba(217,164,65,.16);transition:.4s;pointer-events:none}
+.qcell:hover::before{color:rgba(217,164,65,.35);transform:translateY(-4px)}
+.qcell p{font-family:'Amiri',Georgia,serif;font-style:italic;font-size:clamp(1.25rem,2.4vw,1.55rem);line-height:1.75;color:#efeae0}
 .qcell cite{display:block;margin-top:18px;font-style:normal;font-size:.74rem;letter-spacing:.28em;color:var(--ember);text-transform:uppercase}
 .qcell.qv cite{color:var(--w-korz)}
 
@@ -170,20 +235,24 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1100;background:rgba(14,13,16,.8
 .roster{max-width:1180px;margin:0 auto;padding:0 clamp(18px,4vw,44px);border-top:1px solid var(--line)}
 .rrow{display:grid;grid-template-columns:minmax(150px,.8fr) minmax(0,1fr) auto;gap:clamp(14px,3vw,44px);align-items:baseline;padding:24px 6px;border-bottom:1px solid var(--line);transition:.3s;position:relative}
 .rrow::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--rc,var(--ember));transform:scaleY(0);transition:.3s;transform-origin:top}
-.rrow:hover{background:rgba(255,255,255,.02)}
+.rrow:hover{background:rgba(255,255,255,.025)}
+.rrow:hover h3{text-shadow:0 0 30px rgba(255,255,255,.18)}
 .rrow:hover::before{transform:scaleY(1)}
-.rrow h3{font-size:clamp(1.2rem,2.6vw,1.7rem);color:var(--paper);font-weight:700}
+.rrow h3{font-family:var(--disp);font-weight:600;font-size:clamp(1.5rem,3vw,2.1rem);color:var(--paper);transition:.3s}
 .rrow h3 small{font-family:'Amiri',serif;font-weight:400;color:var(--faint);font-size:.95em;margin-inline-start:10px}
 .rrow .rrole{font-size:.72rem;letter-spacing:.26em;text-transform:uppercase;color:rgb(var(--rrgb));display:block;margin-bottom:4px}
 .rrow p{color:var(--mut);font-size:.92rem;max-width:560px}
 
 /* ---------- world ---------- */
+.world-grid{counter-reset:widx}
 .world-grid{max-width:1180px;margin:0 auto;padding:0 clamp(18px,4vw,44px);columns:2;column-gap:clamp(30px,5vw,70px)}
 @media(max-width:800px){.world-grid{columns:1}}
-.wentry{break-inside:avoid;padding:22px 0;border-bottom:1px solid var(--line)}
+.wentry{break-inside:avoid;padding:22px 0;border-bottom:1px solid var(--line);transition:.3s}
+.wentry:hover{padding-inline-start:10px}
+.wentry:hover p{color:#b5afa6}
 .wentry h3{font-size:1.06rem;color:var(--paper);display:flex;align-items:center;gap:11px}
 .wentry h3 i{width:8px;height:8px;border-radius:50%;background:var(--wc,var(--w-korz));box-shadow:0 0 9px var(--wc,var(--w-korz))}
-.wentry p{color:var(--mut);font-size:.92rem;margin-top:8px}
+.wentry p{color:var(--mut);font-size:.92rem;margin-top:8px;transition:.3s}
 
 /* korz cores */
 .cores{max-width:1180px;margin:clamp(44px,6vw,70px) auto 0;padding:0 clamp(18px,4vw,44px);display:flex;gap:clamp(40px,7vw,110px);justify-content:center;flex-wrap:wrap}
@@ -306,14 +375,16 @@ html.lang-ar .ent b{font-family:'Cairo',sans-serif;font-weight:700;letter-spacin
 .news{display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:clamp(14px,3vw,40px);padding:22px 6px;border-bottom:1px solid var(--line);transition:.25s}
 .news:hover{background:rgba(255,255,255,.02)}
 .ndate{font-family:'Cinzel',serif;font-size:.8rem;color:var(--faint);padding-top:4px;white-space:nowrap}
-.nbody h4{color:var(--paper);font-size:1.04rem;font-weight:700}
+.nbody h4{color:var(--paper);font-family:var(--disp);font-weight:600;font-size:1.25rem}
 .nbody h4 a:hover{color:var(--ember)}
 .nbody p{color:var(--mut);font-size:.92rem;margin-top:3px}
 .ntype{font-size:.66rem;letter-spacing:.22em;padding:5px 12px;border-radius:2px;height:fit-content;margin-top:4px;text-transform:uppercase;white-space:nowrap}
 .t-chapter{color:#b3a1ff;border:1px solid rgba(143,122,232,.4)}
 .t-news{color:var(--ember);border:1px solid rgba(217,164,65,.4)}
 .t-milestone{color:#ff9a94;border:1px solid rgba(214,69,80,.45)}
-.news-empty{padding:40px 6px;color:var(--faint);font-style:italic}
+.news-empty{padding:48px 6px;color:var(--faint);font-style:italic;text-align:center;border-bottom:1px solid var(--line)}
+.news:first-child .nbody h4{font-size:1.35rem}
+.news:first-child{background:linear-gradient(90deg,rgba(217,164,65,.045),transparent 60%)}
 
 /* ---------- OST : album tracklist ---------- */
 .ost-wrap{max-width:1180px;margin:0 auto;padding:0 clamp(18px,4vw,44px);display:grid;grid-template-columns:minmax(260px,.8fr) minmax(0,1.2fr);gap:clamp(30px,6vw,80px)}
@@ -325,8 +396,8 @@ html.lang-ar .ent b{font-family:'Cairo',sans-serif;font-weight:700;letter-spacin
 .ost-hero-card p{color:var(--mut);font-size:.9rem;margin:10px 0 20px}
 .tracklist{border-top:1px solid var(--line)}
 .track{display:flex;align-items:center;gap:16px;padding:13px 6px;border-bottom:1px solid var(--line);color:var(--mut);transition:.2s}
-.track:hover{color:var(--paper);background:rgba(255,255,255,.02)}
-.track i{font-family:'Cinzel',serif;font-style:normal;font-size:.8rem;color:var(--faint);width:26px;flex:none}
+.track:hover{color:var(--paper);background:rgba(217,164,65,.045)}
+.track i{font-family:var(--disp);font-style:italic;font-weight:500;font-size:.95rem;color:var(--faint);width:30px;flex:none}
 .track b{font-weight:600;color:inherit;flex:1;font-size:.95rem}
 .track span.play{opacity:0;color:var(--ember);transition:.2s;font-size:.85rem}
 .track:hover span.play{opacity:1}
@@ -351,15 +422,19 @@ html.lang-ar .ent b{font-family:'Cairo',sans-serif;font-weight:700;letter-spacin
 .fund-copy>p{color:var(--mut);max-width:560px}
 .roadmap{margin-top:34px;border-top:1px solid var(--line)}
 .rstep{display:grid;grid-template-columns:74px 1fr;gap:18px;padding:14px 0;border-bottom:1px solid var(--line);align-items:baseline}
-.rstep b{font-family:'Cinzel',serif;color:var(--blood);filter:brightness(1.35);font-size:1.15rem}
+.rstep b{font-family:var(--disp);font-style:italic;color:#e04753;font-size:1.45rem}
 .rstep span{color:var(--mut);font-size:.92rem}
-.fund-panel{border:1px solid var(--line2);padding:clamp(24px,3.4vw,42px);background:linear-gradient(170deg,#161218,#100d13);height:fit-content;position:sticky;top:100px}
+.fund-panel{border:1px solid rgba(217,164,65,.22);padding:clamp(26px,3.6vw,46px);background:
+ radial-gradient(400px 200px at 50% -30%,rgba(179,29,40,.12),transparent 70%),
+ linear-gradient(170deg,#171319,#100d13);
+ height:fit-content;position:sticky;top:100px;border-radius:4px;
+ box-shadow:0 30px 80px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.05)}
 .support-btn{width:100%;justify-content:center;display:flex;align-items:center;gap:11px;padding:17px 30px;background:var(--blood);color:#fff;border:none;font-weight:700;font-size:1rem;cursor:pointer;font-family:inherit;letter-spacing:.04em;transition:.25s;border-radius:3px}
 .support-btn:hover{background:#cf222e;transform:translateY(-2px);box-shadow:0 14px 34px rgba(179,29,40,.4)}
 .support-btn svg{animation:beat 1.6s ease-in-out infinite}
 @keyframes beat{0%,100%{transform:scale(1)}16%{transform:scale(1.22)}32%{transform:scale(1)}48%{transform:scale(1.15)}}
 .st-total{margin-top:34px;text-align:center}
-.st-num{font-family:'Cinzel',serif;font-size:clamp(2.6rem,6vw,3.8rem);color:var(--paper);line-height:1}
+.st-num{font-family:var(--disp);font-weight:600;font-size:clamp(3rem,6.4vw,4.4rem);color:#f3eee3;line-height:1;font-variant-numeric:tabular-nums}
 .st-num sup{font-size:.42em;color:var(--ember);vertical-align:.7em;margin-inline-end:.15em}
 .st-live{font-size:.74rem;letter-spacing:.26em;color:var(--faint);text-transform:uppercase;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:9px}
 .st-live::before{content:"";width:7px;height:7px;border-radius:50%;background:#e0475b;animation:pulsedot 1.6s infinite}
@@ -392,6 +467,7 @@ html[dir="rtl"] .goalbar i{right:0;left:auto}
 .scard .avt{width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;background:radial-gradient(circle at 32% 30%,rgb(var(--sr)),rgba(var(--sr),.35))}
 .scard .sn{display:block;font-weight:700;color:#fff;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:start}
 .scard .sa{display:block;font-size:.8rem;color:rgb(var(--sr));font-family:'Cinzel',serif;text-align:start}
+.scard .rank{flex:none;font-family:var(--disp);font-style:italic;color:var(--faint);width:22px;font-size:.95rem}
 .sw-empty{max-width:1180px;margin:0 auto;padding:30px clamp(18px,4vw,44px);color:var(--faint);font-style:italic}
 .sw-more{display:block;margin:30px auto 0;background:none;border:1px solid var(--line2);color:var(--mut);padding:10px 26px;cursor:pointer;font-family:inherit;font-size:.86rem;transition:.25s;border-radius:3px}
 .sw-more:hover{color:var(--ember);border-color:var(--ember-dim)}
@@ -421,10 +497,51 @@ footer{padding:52px 0 46px}
 .foot-links{margin-inline-start:auto;display:flex;gap:20px}
 .foot-links a:hover{color:var(--ember)}
 
+
+/* ---------- pro micro-polish ---------- */
+html{scrollbar-gutter:stable}
+img[loading]{opacity:0;transition:opacity .6s ease}
+img.ld{opacity:1}
+a,button{transition-property:color,background,border-color,transform,box-shadow;will-change:auto}
+/* focus rings for keyboard users */
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid rgba(217,164,65,.6);outline-offset:2px}
+/* news hover arrow slide */
+.news .ntype{transition:.25s}
+.news:hover .ntype{transform:translateX(-3px)}
+html[dir="rtl"] .news:hover .ntype{transform:translateX(3px)}
+/* track rows: play slides */
+.track span.play{margin-inline-start:auto}
+/* chips polish */
+.chip{backdrop-filter:blur(2px)}
+/* section kicker gold dot */
+.kicker::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ember);box-shadow:0 0 10px rgba(217,164,65,.5)}
+.s2-zone .kicker::before{background:var(--w-korz);box-shadow:0 0 10px rgba(143,122,232,.5)}
+
+
+#topBtn{position:fixed;bottom:22px;inset-inline-end:22px;z-index:1400;width:46px;height:46px;border-radius:50%;background:#17161b;border:1px solid var(--line2);color:var(--mut);cursor:pointer;font-size:1.05rem;opacity:0;pointer-events:none;transition:.3s}
+html[dir="rtl"] #topBtn{inset-inline-end:auto;inset-inline-start:22px}
+#topBtn.show{opacity:.75;pointer-events:auto}
+#topBtn:hover{opacity:1;color:var(--ember);border-color:var(--ember-dim);transform:translateY(-3px)}
+
 /* ---------- reveal ---------- */
 .rv{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
 .rv.visible{opacity:1;transform:none}
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}}
+
+/* staggered items */
+.rv .rv-item{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease,background .3s}
+.rv.visible .rv-item{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.rv .rv-item{opacity:1;transform:none}}
+/* band numeral drift */
+.band-num{transition:opacity .2s linear;will-change:transform}
+/* hero main parallax */
+.hero-main{will-change:transform,opacity}
+/* display font fallback for ar */
+html.lang-ar :is(h1,h2,h3,.band-head h2,.sec-head h2,.nbody h4,.rrow h3,.st-num){font-family:'Amiri',serif;letter-spacing:0!important}
+html.lang-ar h1{font-weight:700;line-height:1.1}
+html.lang-ar .hero-tag{font-style:normal}
+html.lang-ar .beat-row .bn,html.lang-ar .track i{font-family:'Cinzel',serif}
+
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.rv,.rv .rv-item{opacity:1;transform:none}}
 
 /* ---------- admin panel ---------- */
 .apanel{position:fixed;inset:0;z-index:3000;background:rgba(6,5,8,.85);backdrop-filter:blur(8px);display:flex;align-items:flex-start;justify-content:center;padding:30px 14px;overflow-y:auto}
@@ -457,15 +574,19 @@ html[dir="rtl"] #adminFab{left:auto;right:20px}
 /* ---------- responsive ---------- */
 @media(max-width:960px){
   .hero{grid-template-columns:1fr}
-  .hero-side{border-inline-start:none;border-top:1px solid var(--line);flex-direction:row;flex-wrap:wrap;align-items:center;padding-top:26px}
-  .side-block{min-width:110px}
+  .hero-side{border-inline-start:none;border-top:1px solid var(--line);flex-direction:row;flex-wrap:wrap;align-items:center;gap:18px;padding-top:26px}
+  .side-block{min-width:104px}
   .story-grid{grid-template-columns:1fr}
   .band-head{grid-template-columns:1fr}
-  .band-num{font-size:3.4rem}
+  .band-num{font-size:3.6rem;-webkit-text-stroke-width:.8px}
   .tl-wrap{grid-template-columns:1fr}
-  .rrow{grid-template-columns:1fr}
+  .tl-item{padding:16px 14px}
+  .rrow{grid-template-columns:1fr;gap:8px}
   .ost-wrap{grid-template-columns:1fr}
   .news{grid-template-columns:1fr;gap:8px}
+  .fund-in{grid-template-columns:1fr}
+  .books-in{grid-template-columns:1fr}
+  .cores{gap:44px}
 }
 @media(max-width:820px){
   #burger{display:block}
@@ -519,7 +640,10 @@ html[dir="rtl"] #adminFab{left:auto;right:20px}
     <div class="side-block"><b id="statReads">600K+</b><span data-ar="قراءة على Webnovel">reads on Webnovel</span></div>
     <div class="side-block"><b id="statRating">4.98 ★</b><span data-ar="تقييم القراء">reader rating</span></div>
     <div class="side-block"><b id="statChapters">18+</b><span data-ar="فصلًا منشورًا">chapters live</span></div>
-    <p class="side-note" data-ar="«أوسو» رواية عربية تنشر بالإنجليزية — من العراق إلى العالم. الموسم الأول يُعاد بناؤه فصلًا فصلًا أمام قرّائه."><em>AOSO</em> is an Arabic epic serialized in English — from Iraq to the world. Season One is being rebuilt chapter by chapter, in public.</p>
+    <div class="side-note">
+      <p data-ar="«أوسو» رواية عربية تنشر بالإنجليزية — من العراق إلى العالم. الموسم الأول يُعاد بناؤه فصلًا فصلًا أمام قرّائه."><em>AOSO</em> is an Arabic epic serialized in English — from Iraq to the world. Season One is being rebuilt chapter by chapter, in public.</p>
+      <a class="side-cta" href="#news" data-ar="آخر المستجدات ↓">Latest dispatches ↓</a>
+    </div>
   </aside>
 </header>
 
@@ -563,13 +687,13 @@ html[dir="rtl"] #adminFab{left:auto;right:20px}
       <p data-ar="قبل البطل، كانت الخسارة. كيف احترق العالم؟ كيف تشتّت الأشقاء؟ ولماذا وُلدت الأسطورة من رماد كل ما سُرق؟">Before the hero, the loss. How the world burned, how the siblings scattered, and why the legend rose from the ashes of everything taken.</p>
     </div>
   </div>
-  <div class="beats rv">
-    <div class="beat-row"><div class="bn">I</div><div><h3 data-ar="القوتان الأوليان">THE TWO POWERS</h3></div><p data-ar="ديث، الشر المطلق، يخون توازنه الأزلي مع آيكاد نور الوجود. حربهما تمزق المجرات — وتنتهي بنفيه إلى عالم منسي يُدعى الأرض.">Deth — absolute evil — betrays his eternal balance with Aikad, the light itself. Their war shatters galaxies and ends with Deth exiled to a forgotten world called Earth.</p></div>
-    <div class="beat-row"><div class="bn">II</div><div><h3 data-ar="الملكان اليتامى">THE ORPHAN KINGS</h3></div><p data-ar="يموت الملك هيتر فيرث التوأمان فير وكلايد (عشر سنوات) عرش آراش. ساحر غامض يمنحهما البلوغ — بينما يقتل سرًا كل رسول ملكي، فيبدو الشمال كله وكأنه تخلى عنهما.">King Hiter dies and ten-year-old twins Fer &amp; Clyde inherit Arash. A mysterious wizard grants them manhood — while secretly murdering every royal messenger, so the whole North seems to have abandoned them.</p></div>
-    <div class="beat-row"><div class="bn">III</div><div><h3 data-ar="سقوط الشمال">THE FALL OF THE NORTH</h3></div><p data-ar="ملكات مسمومون وتيجان مسروقة تحول التوأمين إلى سلاح. مملكة بعد مملكة تحتضر — حتى ينفجر الملك زاف الثالث بروحه أمام جيش آراش ليشتري لشعبه أنفاسًا أخيرة.">Poisoned queens and stolen crowns turn the twins into weapons. Kingdom after kingdom burns — until King Zaf III detonates his own soul against Arash's army, buying his people one final breath.</p></div>
-    <div class="beat-row"><div class="bn">IV</div><div><h3 data-ar="العائلة المكسورة">THE BROKEN FAMILY</h3></div><p data-ar="إنجل يهرّب الأطفال من النيران، تُذبح قرية سايا لحمايتهم، وتُختطف ستيلا الصغيرة. ولإخفائهم من مطاردة ديث يُقطع الرابط الملكي بينهم — فيكبر كل طفل ظانًا أن إخوته ضاعوا للأبد.">Angel smuggles the children from the flames; Sayya village is massacred for sheltering them; little Stella is dragged away in chains. To hide them from Deth's hunt, the royal bond is severed — each child grows up believing the others are gone forever.</p></div>
-    <div class="beat-row"><div class="bn">V</div><div><h3 data-ar="هيفاستوس يهبط">HEFASTOS DESCENDS</h3></div><p data-ar="ديث يستدعي حاكم الجحيم — العملاق ذا القناع القرني — لقتل الطفل. أوزماك وكودلر وإيفا يقفون في النار… ثم يظهر هاديس نفسه، ملك العالم السفلي، طالبًا الثمن.">Deth summons Hell itself — the horned colossus Hefastos — to murder the child. Ozmak, Kudler and little Eva stand in the fire… until Hades, King of the Underworld, rises for the price.</p></div>
-    <div class="beat-row"><div class="bn">VI</div><div><h3 data-ar="مهمة كريكلس">THE KREKELS MISSION</h3></div><p data-ar="أول مهمة عبر النجوم تنقلب كمينًا: زنزانة في نبتون، ومملكة سيفاروس الوهمية — وحين يظن أوسو أن أوزماك قُتل يشعل شعاره الملكي قوةً تمحو جيشًا كاملًا. أول عاصفة حقيقية للأسطورة.">His first star-mission becomes an ambush: a dungeon on Neptune, the illusion-realm of Sivaros — and when AOSO believes Ozmak dead, his royal sigil ignites a power that erases an entire army. The storm begins.</p></div>
+  <div class="beats rv" data-stagger-container>
+    <div class="beat-row rv-item"><div class="bn">I</div><div><h3 data-ar="القوتان الأوليان">THE TWO POWERS</h3></div><p data-ar="ديث، الشر المطلق، يخون توازنه الأزلي مع آيكاد نور الوجود. حربهما تمزق المجرات — وتنتهي بنفيه إلى عالم منسي يُدعى الأرض.">Deth — absolute evil — betrays his eternal balance with Aikad, the light itself. Their war shatters galaxies and ends with Deth exiled to a forgotten world called Earth.</p></div>
+    <div class="beat-row rv-item"><div class="bn">II</div><div><h3 data-ar="الملكان اليتامى">THE ORPHAN KINGS</h3></div><p data-ar="يموت الملك هيتر فيرث التوأمان فير وكلايد (عشر سنوات) عرش آراش. ساحر غامض يمنحهما البلوغ — بينما يقتل سرًا كل رسول ملكي، فيبدو الشمال كله وكأنه تخلى عنهما.">King Hiter dies and ten-year-old twins Fer &amp; Clyde inherit Arash. A mysterious wizard grants them manhood — while secretly murdering every royal messenger, so the whole North seems to have abandoned them.</p></div>
+    <div class="beat-row rv-item"><div class="bn">III</div><div><h3 data-ar="سقوط الشمال">THE FALL OF THE NORTH</h3></div><p data-ar="ملكات مسمومون وتيجان مسروقة تحول التوأمين إلى سلاح. مملكة بعد مملكة تحتضر — حتى ينفجر الملك زاف الثالث بروحه أمام جيش آراش ليشتري لشعبه أنفاسًا أخيرة.">Poisoned queens and stolen crowns turn the twins into weapons. Kingdom after kingdom burns — until King Zaf III detonates his own soul against Arash's army, buying his people one final breath.</p></div>
+    <div class="beat-row rv-item"><div class="bn">IV</div><div><h3 data-ar="العائلة المكسورة">THE BROKEN FAMILY</h3></div><p data-ar="إنجل يهرّب الأطفال من النيران، تُذبح قرية سايا لحمايتهم، وتُختطف ستيلا الصغيرة. ولإخفائهم من مطاردة ديث يُقطع الرابط الملكي بينهم — فيكبر كل طفل ظانًا أن إخوته ضاعوا للأبد.">Angel smuggles the children from the flames; Sayya village is massacred for sheltering them; little Stella is dragged away in chains. To hide them from Deth's hunt, the royal bond is severed — each child grows up believing the others are gone forever.</p></div>
+    <div class="beat-row rv-item"><div class="bn">V</div><div><h3 data-ar="هيفاستوس يهبط">HEFASTOS DESCENDS</h3></div><p data-ar="ديث يستدعي حاكم الجحيم — العملاق ذا القناع القرني — لقتل الطفل. أوزماك وكودلر وإيفا يقفون في النار… ثم يظهر هاديس نفسه، ملك العالم السفلي، طالبًا الثمن.">Deth summons Hell itself — the horned colossus Hefastos — to murder the child. Ozmak, Kudler and little Eva stand in the fire… until Hades, King of the Underworld, rises for the price.</p></div>
+    <div class="beat-row rv-item"><div class="bn">VI</div><div><h3 data-ar="مهمة كريكلس">THE KREKELS MISSION</h3></div><p data-ar="أول مهمة عبر النجوم تنقلب كمينًا: زنزانة في نبتون، ومملكة سيفاروس الوهمية — وحين يظن أوسو أن أوزماك قُتل يشعل شعاره الملكي قوةً تمحو جيشًا كاملًا. أول عاصفة حقيقية للأسطورة.">His first star-mission becomes an ambush: a dungeon on Neptune, the illusion-realm of Sivaros — and when AOSO believes Ozmak dead, his royal sigil ignites a power that erases an entire army. The storm begins.</p></div>
   </div>
 </section>
 
@@ -601,12 +725,12 @@ html[dir="rtl"] #adminFab{left:auto;right:20px}
     </div>
   </div>
   <div class="beats rv s2-zone">
-    <div class="beat-row"><div class="bn">I</div><div><h3 data-ar="بعد ثماني سنوات">EIGHT YEARS LATER</h3></div><p data-ar="أوسو يبني السفن نهارًا ويتدرب سرًا. كازانوف يعود إلى ركام سايا وينفجر غضبه المكتوم: سيحرر ستيلا مهما وقف في الطريق.">AOSO builds ships by day, trains in secret. Kazanov walks back into the ruins of Sayya — and his buried rage explodes: he will free Stella, whatever stands in the way.</p></div>
-    <div class="beat-row"><div class="bn">II</div><div><h3 data-ar="الدخول إلى الكورز">ENTER THE KORZ</h3></div><p data-ar="جاسوس ديث يخطف أوسو ويرميه عبر بوابة إلى الكورز: عالم القطاعات، كل قطاع وُلد من خوف مختلف. أربعة أختام تفتح طريق الخروج — ولا شيء سواها.">Deth's spy seizes AOSO and flings him through a portal — a realm of sectors, each born from a different fear. Four seals open the way out. Nothing else does.</p></div>
-    <div class="beat-row"><div class="bn">III</div><div><h3 data-ar="قطاع الهمس">THE WHISPER SECTOR</h3></div><p data-ar="عمالقة مدرعون لا يتوقفون عن المشي، صرخات تمزق الفكر، وظل يردد كلماتك ضدك. وفي القلب — آراش: مؤسس خالد سئم الأبدية يبحث عن أحد أقوى منه ليقتله. فيجد أوسو.">Armored titans that never stop walking. Screams that tear thought apart. A shadow repeating your words back at you. At its heart — Arash: an immortal founder bored of eternity, hunting anyone strong enough to kill him. He finds AOSO instead.</p></div>
-    <div class="beat-row"><div class="bn">IV</div><div><h3 data-ar="قطاع الدم">THE BLOOD SECTOR</h3></div><p data-ar="سماء حمراء وأنهار من الدم وقبائل تعبد الوحوش. هنا لا يختبر القطاع قوة أوسو بل روحه — وعند الإله أيغورثال يصبح السؤال: ماذا سيبقى منه؟">Red skies, rivers of blood, tribes that worship monsters. Here the sector doesn't test strength — it tests the soul. By the god Aigorthal, the question isn't survival… it's what will be left of him.</p></div>
-    <div class="beat-row"><div class="bn">V</div><div><h3 data-ar="النجمة السوداء">THE BLACK STAR</h3></div><p data-ar="بينما يغرق أوسو في الكورز تشتعل نجمة أخيه السوداء. كازانوف يقتحم مملكة آراش وحده، يحطم قبتها، وينقش اسم أخيه في السماء — أول ضربة لمّ شمل يشاهدها ديث بنفسه.">While AOSO drowns in the Korz, the black star ignites. Kazanov flies alone into Arash's kingdom, shatters its dome, carves his brother's name across the sky — the reunion's first blow, witnessed by Deth himself.</p></div>
-    <div class="beat-row"><div class="bn">VI</div><div><h3 data-ar="اليد خلف العرش">THE HAND BEHIND THE THRONE</h3></div><p data-ar="فير وكلايد يظنان أنهما يملكان الحكم وهما لا يملكان شيئًا. على سطح القصر يتحدث ديث والمجهول عن خطط أقدم من الشمال نفسه. الحرب الحقيقية لم تبدأ بعد.">Fer and Clyde believe they rule. They rule nothing. On the palace roof, Deth and the Unknown speak of designs older than the North itself. The real war hasn't started yet.</p></div>
+    <div class="beat-row rv-item"><div class="bn">I</div><div><h3 data-ar="بعد ثماني سنوات">EIGHT YEARS LATER</h3></div><p data-ar="أوسو يبني السفن نهارًا ويتدرب سرًا. كازانوف يعود إلى ركام سايا وينفجر غضبه المكتوم: سيحرر ستيلا مهما وقف في الطريق.">AOSO builds ships by day, trains in secret. Kazanov walks back into the ruins of Sayya — and his buried rage explodes: he will free Stella, whatever stands in the way.</p></div>
+    <div class="beat-row rv-item"><div class="bn">II</div><div><h3 data-ar="الدخول إلى الكورز">ENTER THE KORZ</h3></div><p data-ar="جاسوس ديث يخطف أوسو ويرميه عبر بوابة إلى الكورز: عالم القطاعات، كل قطاع وُلد من خوف مختلف. أربعة أختام تفتح طريق الخروج — ولا شيء سواها.">Deth's spy seizes AOSO and flings him through a portal — a realm of sectors, each born from a different fear. Four seals open the way out. Nothing else does.</p></div>
+    <div class="beat-row rv-item"><div class="bn">III</div><div><h3 data-ar="قطاع الهمس">THE WHISPER SECTOR</h3></div><p data-ar="عمالقة مدرعون لا يتوقفون عن المشي، صرخات تمزق الفكر، وظل يردد كلماتك ضدك. وفي القلب — آراش: مؤسس خالد سئم الأبدية يبحث عن أحد أقوى منه ليقتله. فيجد أوسو.">Armored titans that never stop walking. Screams that tear thought apart. A shadow repeating your words back at you. At its heart — Arash: an immortal founder bored of eternity, hunting anyone strong enough to kill him. He finds AOSO instead.</p></div>
+    <div class="beat-row rv-item"><div class="bn">IV</div><div><h3 data-ar="قطاع الدم">THE BLOOD SECTOR</h3></div><p data-ar="سماء حمراء وأنهار من الدم وقبائل تعبد الوحوش. هنا لا يختبر القطاع قوة أوسو بل روحه — وعند الإله أيغورثال يصبح السؤال: ماذا سيبقى منه؟">Red skies, rivers of blood, tribes that worship monsters. Here the sector doesn't test strength — it tests the soul. By the god Aigorthal, the question isn't survival… it's what will be left of him.</p></div>
+    <div class="beat-row rv-item"><div class="bn">V</div><div><h3 data-ar="النجمة السوداء">THE BLACK STAR</h3></div><p data-ar="بينما يغرق أوسو في الكورز تشتعل نجمة أخيه السوداء. كازانوف يقتحم مملكة آراش وحده، يحطم قبتها، وينقش اسم أخيه في السماء — أول ضربة لمّ شمل يشاهدها ديث بنفسه.">While AOSO drowns in the Korz, the black star ignites. Kazanov flies alone into Arash's kingdom, shatters its dome, carves his brother's name across the sky — the reunion's first blow, witnessed by Deth himself.</p></div>
+    <div class="beat-row rv-item"><div class="bn">VI</div><div><h3 data-ar="اليد خلف العرش">THE HAND BEHIND THE THRONE</h3></div><p data-ar="فير وكلايد يظنان أنهما يملكان الحكم وهما لا يملكان شيئًا. على سطح القصر يتحدث ديث والمجهول عن خطط أقدم من الشمال نفسه. الحرب الحقيقية لم تبدأ بعد.">Fer and Clyde believe they rule. They rule nothing. On the palace roof, Deth and the Unknown speak of designs older than the North itself. The real war hasn't started yet.</p></div>
   </div>
   <div class="quotes2 rv">
     <div class="qcell"><p data-ar="«نقاتل فقط لكي ننجو يومًا إضافيًا… لكي نقاتل فيه مرة أخرى.»">“We fight only to survive one more day — so we can fight again.”</p><cite>— Arash</cite></div>
@@ -986,13 +1110,37 @@ document.getElementById('langBtn').onclick=function(){isAr=!isAr;setLang(isAr)};
   }
 })();
 
-/* ---------- scroll progress + reveal ---------- */
+/* ---------- scroll progress + staggered reveal + parallax ---------- */
 addEventListener('scroll',()=>{
   const d=document.documentElement,max=d.scrollHeight-d.clientHeight;
   document.getElementById('progress').style.width=(max>0?(d.scrollTop/max)*100:0)+'%';
+  /* hero parallax */
+  const hm=document.querySelector('.hero-main');
+  if(hm&&d.scrollTop<innerHeight){hm.style.transform='translateY('+(d.scrollTop*.18)+'px)';hm.style.opacity=Math.max(0,1-d.scrollTop/(innerHeight*.85))}
 },{passive:true});
-const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){en.target.classList.add('visible');io.unobserve(en.target)}}),{threshold:.1});
+const io=new IntersectionObserver(es=>es.forEach(en=>{
+  if(en.isIntersecting){
+    const el=en.target;
+    /* stagger children with .rv-auto */
+    const kids=el.querySelectorAll('[data-stagger]');
+    kids.forEach((k,i)=>{k.style.transitionDelay=(i*70)+'ms'});
+    el.classList.add('visible');
+    io.unobserve(el);
+  }
+}),{threshold:.08});
 document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+/* band numerals drift on scroll */
+const bnums=[...document.querySelectorAll('.band-num')];
+addEventListener('scroll',()=>{
+  bnums.forEach(b=>{
+    const r=b.getBoundingClientRect();
+    if(r.top<innerHeight&&r.bottom>0){
+      const p=(innerHeight-r.top)/innerHeight;
+      b.style.transform='translateY('+((p-.5)*-46)+'px)';
+      b.style.opacity=.55+p*.45;
+    }
+  });
+},{passive:true});
 
 /* ---------- renderers ---------- */
 function renderStats(){
@@ -1052,7 +1200,7 @@ function renderWall(){
     rest.slice(0,limit).forEach((sp,i)=>{
       const c=document.createElement('div');c.className='scard';
       c.style.setProperty('--sr',COLORS[i%COLORS.length].join(','));
-      c.innerHTML=`<span class="avt">${esc((sp[0]||'?').trim().charAt(0).toUpperCase())}</span><span style="min-width:0"><span class="sn">${esc(sp[0])}</span><span class="sa">$${fmt(sp[1])}</span></span>`;
+      c.innerHTML=`<span class="rank">${i+4}</span><span class="avt">${esc((sp[0]||'?').trim().charAt(0).toUpperCase())}</span><span style="min-width:0;flex:1"><span class="sn">${esc(sp[0])}</span><span class="sa">$${fmt(sp[1])}</span></span>`;
       c.style.animationDelay=(i*.06)+'s';
       requestAnimationFrame(()=>c.classList.add('in'));
       grid.appendChild(c);
@@ -1136,10 +1284,55 @@ document.getElementById('aReset').onclick=()=>{
   if(confirm('Reset all content to defaults?')){SITE=JSON.parse(JSON.stringify(DEFAULTS));saveSite();applySite();openAdmin()}
 };
 
+
+
+/* active nav link on scroll */
+(function(){
+  const links=[...document.querySelectorAll('.nav-links a[href^="#"]')];
+  const secs=links.map(a=>document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  function upd(){
+    const y=innerHeight*.35;let cur=null;
+    secs.forEach(sec=>{if(sec.getBoundingClientRect().top<=y)cur=sec.id});
+    links.forEach(a=>a.style.color=a.getAttribute('href')==='#'+cur?'var(--paper)':'');
+  }
+  addEventListener('scroll',upd,{passive:true});upd();
+})();
+
+/* image fade-in */
+document.querySelectorAll('img').forEach(im=>{
+  if(im.complete&&im.naturalWidth>0)im.classList.add('ld');
+  else im.addEventListener('load',()=>im.classList.add('ld'));
+});
+
+
+/* goal milestones 25/50/75 */
+(function(){
+  const bar=document.querySelector('.goalbar');
+  if(!bar)return;
+  [25,50,75].forEach(p=>{
+    const m=document.createElement('div');m.className='mk';
+    m.style.insetInlineStart=p+'%';
+    m.innerHTML='<span>'+p+'%</span>';
+    bar.appendChild(m);
+  });
+})();
+
+
+/* back-to-top button appears after hero */
+(function(){
+  const b=document.createElement('button');
+  b.id='topBtn';b.setAttribute('aria-label','back to top');
+  b.innerHTML='↑';
+  document.body.appendChild(b);
+  const upd=()=>{b.classList.toggle('show',document.documentElement.scrollTop>innerHeight*1.2)};
+  addEventListener('scroll',upd,{passive:true});
+  b.onclick=()=>scrollTo({top:0,behavior:'smooth'});
+})();
+
 /* ---------- loader ---------- */
 function hideLoader(){document.getElementById('loader').classList.add('done')}
-window.addEventListener('load',()=>setTimeout(hideLoader,1600));
-setTimeout(hideLoader,3500);
+window.addEventListener('load',()=>setTimeout(hideLoader,1100));
+setTimeout(hideLoader,2800);
 </script>
 </body>
 </html>
