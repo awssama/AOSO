@@ -696,6 +696,113 @@ html[dir="rtl"] .news{transform:translateX(26px)}
 /* 11. blood core heartbeat vignette on page when visible */
 .blood-pulse #progress{box-shadow:0 0 12px rgba(214,39,58,.9)}
 
+
+/* ---------- 3D islands (three.js) ---------- */
+
+/* ---------- isle experiences ---------- */
+.isle-exp{position:relative}
+.expCanvas{position:sticky;top:0;width:100%;height:100svh;display:block}
+.exp-ui{pointer-events:none}
+.e-step{position:absolute;inset-inline-start:clamp(22px,5vw,80px);bottom:clamp(80px,12vh,140px);max-width:460px;opacity:0;transform:translateY(26px);transition:.7s cubic-bezier(.2,.7,.2,1)}
+.e-step.on{opacity:1;transform:none}
+.e-step b{display:block;font-family:'Cinzel',serif;color:#fff;font-size:clamp(1.5rem,3.2vw,2.3rem);letter-spacing:.08em;text-shadow:0 2px 24px rgba(0,0,0,.85);margin-bottom:10px}
+html.lang-ar .e-step b{font-family:'Amiri',serif}
+#whisper .e-step b{text-shadow:0 2px 26px rgba(143,122,232,.5)}
+#blood .e-step b{text-shadow:0 2px 26px rgba(214,69,80,.55)}
+.e-step p{color:#a9a4b8;font-size:.98rem;line-height:1.75;text-shadow:0 1px 12px rgba(0,0,0,.9)}
+/* ---------- HON poster band ---------- */
+.hon-band{position:relative;min-height:88svh;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;border-bottom:1px solid var(--line);background:
+ radial-gradient(1000px 500px at 50% 120%,rgba(143,122,232,.16),transparent 65%),
+ radial-gradient(800px 400px at 50% -20%,rgba(179,29,40,.12),transparent 60%),#07060b}
+.hon-band::before{content:"";position:absolute;inset:-40%;
+ background:conic-gradient(from 180deg at 50% 50%,transparent 0deg,rgba(143,122,232,.07) 40deg,transparent 80deg,rgba(179,29,40,.06) 150deg,transparent 200deg,rgba(217,164,65,.05) 280deg,transparent 330deg);
+ animation:spin 40s linear infinite;pointer-events:none}
+.hon-in{position:relative;z-index:2;padding:clamp(30px,6vw,80px)}
+.hon-band h2{font-family:var(--disp);font-weight:600;font-size:clamp(2.6rem,7.5vw,5.6rem);line-height:1;letter-spacing:-.01em;
+ background:linear-gradient(175deg,#f2edff 25%,#a99cf0 55%,#574a8f 90%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-top:14px}
+.ar-h{font-family:'Amiri',serif;color:#b9aef2;font-size:clamp(1.3rem,3vw,2rem);margin-top:10px}
+.hon-p{color:var(--mut);max-width:520px;margin:22px auto 0;font-family:var(--disp);font-style:italic;font-size:1.1rem;line-height:1.75}
+
+.islands{max-width:1180px;margin:0 auto;padding:0 clamp(18px,4vw,44px);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(20px,3vw,40px);align-items:start}
+@media(max-width:760px){.islands{grid-template-columns:1fr}.isle-canvas-wrap{aspect-ratio:1/0.9}}
+.isle-wrap{--eg:201,162,39}
+.isle-canvas-wrap{position:relative;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:
+ radial-gradient(600px 300px at 50% 115%,rgba(var(--eg),.10),transparent 70%),#0b0a0e;
+ aspect-ratio:4/3;cursor:grab}
+.isle-canvas-wrap:active{cursor:grabbing}
+.isle-canvas-wrap canvas{width:100%;height:100%;display:block}
+.bloodwrap{background:radial-gradient(600px 300px at 50% 115%,rgba(179,29,40,.13),transparent 70%),#0c0a0d}
+.isle-hud{position:absolute;top:14px;left:16px;pointer-events:none}
+.isle-hud b{display:block;font-family:'Cinzel',serif;color:#fff;font-size:1rem;letter-spacing:.14em;text-shadow:0 2px 10px #000}
+html.lang-ar .isle-hud b{font-family:'Amiri',serif;letter-spacing:0}
+.isle-hud span{font-size:.68rem;color:var(--faint);letter-spacing:.08em}
+
+
+/* flying entity cards (projected from 3D) */
+.fly-layer{position:absolute;inset:0;pointer-events:none;z-index:5}
+.fly-layer .fly-card{pointer-events:auto}
+.fly-card{position:absolute;top:0;left:0;display:flex;align-items:center;gap:8px;
+ transform:translate(-50%,-50%) scale(var(--k,1));transform-origin:center;
+ background:rgba(10,9,13,.72);backdrop-filter:blur(4px);
+ border:1px solid rgba(var(--eg,201,162,39),.45);
+ padding:7px 12px;border-radius:3px;white-space:nowrap;
+ box-shadow:0 6px 18px rgba(0,0,0,.5),0 0 18px rgba(var(--eg,201,162,39),.14)}
+.fly-card .fc-dot{width:8px;height:8px;border-radius:50%;background:rgb(var(--eg,201,162,39));box-shadow:0 0 10px rgb(var(--eg,201,162,39));flex:none}
+.fly-card .fc-name{font-family:'Cinzel',serif;font-size:.74rem;letter-spacing:.1em;color:#fff}
+html.lang-ar .fly-card .fc-name{font-family:'Cairo',sans-serif;font-size:.82rem;letter-spacing:0}
+
+
+/* entity detail modal */
+.emodal{position:fixed;inset:0;z-index:4000;background:rgba(5,4,7,.86);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:22px}
+.emodal[hidden]{display:none}
+.ecard{width:min(560px,94vw);max-height:88vh;overflow-y:auto;background:
+ radial-gradient(500px 220px at 50% -20%,rgba(var(--eg),.16),transparent 70%),
+ linear-gradient(170deg,#161319,#100d13);
+ border:1px solid rgba(var(--eg),.45);border-radius:6px;padding:34px 32px;position:relative;
+ box-shadow:0 40px 110px rgba(0,0,0,.75);animation:mUp .35s cubic-bezier(.2,.7,.2,1)}
+.ecard .evis{height:120px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid rgba(var(--eg),.25);margin-bottom:22px;position:relative;overflow:hidden}
+.ecard .ename{font-family:'Cinzel',serif;font-size:clamp(1.4rem,3vw,1.9rem);color:#fff;line-height:1.2;margin-bottom:14px}
+html.lang-ar .ecard .ename{font-family:'Amiri',serif}
+.ecard .etext{color:#cfc9c0;font-size:1rem;line-height:1.85}
+.ecard .ewhisper{margin-top:22px;padding:14px 18px;border-inline-start:3px solid rgb(var(--eg));background:rgba(var(--eg),.07);
+ font-family:'Amiri',Georgia,serif;font-style:italic;color:#efeae0;font-size:1.05rem}
+.eclose{position:absolute;top:10px;inset-inline-end:12px;background:none;border:none;color:var(--mut);font-size:1.15rem;cursor:pointer;padding:4px 10px}
+.eclose:hover{color:#fff}
+.fly-card{cursor:pointer;pointer-events:auto}
+
+
+/* ---------- crystal experience ---------- */
+#cystal,#crystal{position:relative}
+.crys-ui{position:absolute;inset:0;pointer-events:none;display:flex;align-items:flex-end;padding:clamp(24px,5vw,80px)}
+.c-step{position:absolute;inset-inline-start:clamp(24px,5vw,80px);bottom:clamp(90px,12vh,140px);max-width:440px;opacity:0;transform:translateY(26px);transition:.7s cubic-bezier(.2,.7,.2,1)}
+.c-step.on{opacity:1;transform:none}
+.c-step b{display:block;font-family:'Cinzel',serif;color:#e8e2f5;font-size:clamp(1.6rem,3.4vw,2.4rem);letter-spacing:.08em;text-shadow:0 2px 24px rgba(0,0,0,.8);margin-bottom:10px}
+html.lang-ar .c-step b{font-family:'Amiri',serif}
+.c-step p{color:#a9a4b8;font-size:.98rem;line-height:1.75;text-shadow:0 1px 12px rgba(0,0,0,.9)}
+.c-scroll{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);font-size:.68rem;letter-spacing:.34em;color:#7d7891;text-transform:uppercase;animation:bob 2.2s infinite}
+
+
+/* transmission cards — viewport-pinned */
+.tcard{position:fixed;top:50%;transform:translateY(-50%);inset-inline-end:clamp(20px,6vw,90px);z-index:60;
+ width:min(360px,78vw);pointer-events:none;opacity:0;transition:opacity .45s ease}
+html[dir="rtl"] .tcard{inset-inline-end:auto;inset-inline-start:clamp(20px,6vw,90px)}
+.tcard.on{opacity:1}
+.tcard .tc-inner{background:rgba(9,8,12,.55);backdrop-filter:blur(10px);
+ border:1px solid rgba(var(--tint),.4);border-radius:4px;padding:26px 28px;position:relative;overflow:hidden}
+.tcard .tc-inner::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;
+ background:linear-gradient(90deg,transparent,rgb(var(--tint)),transparent);animation:sweep 3.5s linear infinite}
+.tcard .tc-idx{font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.34em;color:rgb(var(--tint));text-transform:uppercase;display:block;margin-bottom:10px}
+.tcard h3{font-family:'Cinzel',serif;color:#fff;font-size:clamp(1.4rem,2.6vw,2rem);line-height:1.15;margin-bottom:12px;text-shadow:0 0 30px rgba(var(--tint),.45)}
+html.lang-ar .tcard h3{font-family:'Amiri',serif}
+.tcard p{color:#b5afc4;font-size:.95rem;line-height:1.8;margin:0}
+.tcard .tc-scan{position:absolute;inset:0;background:linear-gradient(180deg,transparent,rgba(255,255,255,.06) 48%,transparent 52%);height:200%;animation:scanMove 2.8s linear infinite;pointer-events:none}
+@keyframes scanMove{from{transform:translateY(-50%)}to{transform:translateY(0)}}
+/* glitch flicker on materialize */
+.glitch-in{animation:gIn .55s steps(2,end)}
+@keyframes gIn{0%{opacity:0;transform:translateX(-8px) skewX(6deg);filter:brightness(2.5) saturate(0)}
+ 30%{opacity:1;transform:translateX(6px) skewX(-4deg)}
+ 55%{transform:translateX(-3px);filter:none}100%{opacity:1;transform:none}}
+
 /* ---------- reveal ---------- */
 .rv{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
 .rv.visible{opacity:1;transform:none}
@@ -855,6 +962,18 @@ html[dir="rtl"] #adminFab{left:auto;right:20px}
   </div>
 </section>
 
+<!-- ==================== KORZ CRYSTAL EXPERIENCE ==================== -->
+<section id="crystal" style="position:relative;height:300svh;background:#050409">
+  <canvas id="iceCanvas" style="position:sticky;top:0;width:100%;height:100svh;display:block"></canvas>
+  <div class="crys-ui" id="crysUi">
+    <div class="c-step" data-step="0"><b data-ar="النواة">THE CORE</b><p data-ar="في قلب الكورز… نواةُ عدمٍ محبوسة في بلّورة.">At the heart of the Korz — a nucleus of nothing, sealed in crystal.</p></div>
+    <div class="c-step" data-step="1"><b data-ar="الأختام الأربعة">FOUR SEALS</b><p data-ar="أربعة همسات تحرس الطريق. اكسرهم… لتفتح ما لا يجب فتحه.">Four whispers guard the way. Break them… to open what should stay closed.</p></div>
+    <div class="c-step" data-step="2"><b data-ar="قطاع الدم">BLOOD SECTOR</b><p data-ar="حين يكتمل الكسوف… يصل الإله الذي لا يجب أن يكون.">When the eclipse completes… the god who shouldn't be arrives.</p></div>
+    <div class="c-step" data-step="3"><b data-ar="قلب العدم">HEART OF NIHILISM</b><p data-ar="«أنا هنا… رغم أنني لا يجب أن أكون.»">“I am here… though I should not be.”</p></div>
+  </div>
+  <div class="c-scroll" data-ar="مرّر للاستكشاف ↓">SCROLL TO EXPLORE ↓</div>
+</section>
+
 <!-- ==================== SEASON I ==================== -->
 <section class="band s1-band" id="season1">
   <div class="band-head rv">
@@ -957,102 +1076,51 @@ html[dir="rtl"] #adminFab{left:auto;right:20px}
     <div class="wentry" style="--wc:var(--w-sigil)"><h3><i></i><span data-ar="الشعار الملكي">THE ROYAL SIGIL</span></h3><p data-ar="دم زاف يحمل علامات حية: نجمة لكل شقيق. تتوهج عند الخطر وتحمل القوة بين القلوب عبر المحيطات.">The bloodline of Zaf carries living marks — a star for each sibling. They blaze when one is in danger and carry strength between hearts across oceans.</p></div>
     <div class="wentry" style="--wc:var(--w-village)"><h3><i></i><span data-ar="القرية الشمالية">THE NORTHERN VILLAGE</span></h3><p data-ar="بلدة وحصن وأكاديمية في آن. موطن سحرة الجليد — وأكثر بقاع الكوكب أمانًا، لأن هونوغا يقول ذلك.">Part town, part fortress, part academy. Home of ice mages — and the safest place on the planet, because Honuga says so.</p></div>
   </div>
-  <div class="cores rv">
-    <div class="core">
-      <div class="stage">
-        <div class="wave"></div><div class="wave"></div><div class="wave"></div>
-        <div class="orbit o1"><i></i></div><div class="orbit o2"><i></i></div>
-        <div class="orb-w"></div>
-      </div>
-      <b data-ar="نواة الهمس">THE WHISPER CORE</b>
-      <span data-ar="قطاع يهمس… فيردد صوتك ضدك">a sector that whispers your voice back at you</span>
+</section>
 
-      <!-- Whisper entities : the four seal-keepers -->
-      <div class="ent-grid" style="--eg:143,122,232">
-        <div class="ent">
-          <div class="ent-vis"><span class="silh silh-armor red-mask"></span></div>
-          <b data-ar="الهامس المدرع">THE ARMORED WHISPERER</b>
-          <p data-ar="درع أسود يمتص الضوء وقناع أحمر بعينين فارغتين تخترقان الأفكار. لا يسرع ولا يتردد — همسته الأولى: «أنت وحدك هنا».">Black armor that drinks the light; a red mask with hollow eyes that pierce thought. He never hurries — his first whisper: "You are alone here."</p>
-        </div>
-        <div class="ent">
-          <div class="ent-vis">
-            <span class="silh silh-thin"></span><span class="fore-eye"></span>
-          </div>
-          <b data-ar="هامس الصدى">ECHO-WHISPERER</b>
-          <p data-ar="نحيل ببشرة خضراء ميتة وعين مغلقة على جبهه تتذكر بدل أن ترى. لا يتكلم كثيرًا — يجعل العالم كله يكرر ما قيل حتى يصبح الصوت سجنًا.">Gaunt, dead-green skin, a closed eye on his forehead that remembers instead of seeing. He barely speaks — he makes the world repeat what was said, until sound becomes a prison.</p>
-        </div>
-        <div class="ent">
-          <div class="ent-vis"><span class="silh silh-void"></span></div>
-          <b data-ar="هامس الخراب">RUIN-WHISPERER</b>
-          <p data-ar="فمه حفرة سوداء تطلق صرخة تهزم الجسد قبل السلاح — لا يحتمي بمعدن بل بموجة تمنع الوصول نفسه.">His mouth is a black pit that unleashes a scream defeating the body before any blade — he shields himself not with armor but with a wave that forbids approach itself.</p>
-        </div>
-        <div class="ent">
-          <div class="ent-vis">
-            <span class="silh silh-silent"></span><span class="mute-x"></span>
-          </div>
-          <b data-ar="الهامس الصامت">THE SILENT WHISPERER</b>
-          <p data-ar="قناع نصفه مغلق تمامًا. يلغي كل صوت في العالم: صدى الغابة، أنفاسك، نبض قلبك، حتى أفكارك — ثم يضرب في ذلك الصمت المطلق.">Half his mask is sealed shut. He erases every sound in the world — the forest's echo, your breath, your heartbeat, your very thoughts — then strikes inside that absolute silence.</p>
-        </div>
-      </div>
-      <div class="core">
-      <div class="stage">
-        <div class="pulse-ring"></div>
-        <div class="orb-b"></div>
-        <div class="bubble"></div><div class="bubble"></div><div class="bubble"></div>
-        <div class="drip"></div><div class="drip"></div>
-      </div>
-      <b data-ar="نواة الدم">THE BLOOD CORE</b>
-      <span data-ar="قلب حي ينبض تحت سماء حمراء">a living heart beating beneath a red sky</span>
-
-      <!-- Blood entities : the seven -->
-      <div class="ent-grid" style="--eg:214,69,80">
-        <div class="ent">
-          <div class="ent-vis"><span class="eye-single"></span></div>
-          <b data-ar="ثالغور">THALGHOR</b>
-          <p data-ar="جسد من دم متصلب بلا وجه — عين حمراء واحدة لا ترمش، تراقب ببرود مظلم. يرمي خناجر لا تُرى مصادرها، ويحوّل البشر إلى مسوخ يخدمونه.">A faceless body of hardened blood — one deep-red eye that never blinks, watching with dark calm. Hurls daggers from nowhere and turns humans into the mutants who serve him.</p>
-        </div>
-        <div class="ent">
-          <div class="ent-vis">
-            <span class="silh silh-falkreth"></span><span class="heart-cage"></span>
-          </div>
-          <b data-ar="فالكريث">FALKRETH</b>
-          <p data-ar="خطيئة تمشي على أرض: قرنان كجذور شجرة ميّتة، وعينان تبتلعان الضوء. في صدره قفص عظمي… بداخله كيان طفل بقرنين وأجنحة سوداء يحتضن القلب — كما يحتضن طفلًا والدته.">A walking sin: horns like roots of a dead tree, eyes that swallow light. In his chest, a bone cage — inside it a small horned, black-winged entity cradling the heart, the way a child holds its mother.</p>
-        </div>
-        <div class="ent">
-          <div class="ent-vis"><span class="silh silh-chains"></span></div>
-          <b data-ar="هامس السلاسل · كيان القبو">THE CHAINED SMILE</b>
-          <p data-ar="مصنوع من ظل متكثف وعظام توشك أن تمزق جلده. عيناه فراغان أسودان وفمه ابتسامة مستحيلة — سلاسل داكنة تمتد من جلده إلى العتمة، تربطه بشيء لا يمكن رؤيته.">Woven from condensed shadow, skin stretched over bone about to tear. His eyes are two black voids; his mouth a permanent impossible smile — dark chains run from his skin into the darkness, binding him to something unseen.</p>
-        </div>
-        <div class="ent">
-          <div class="ent-vis"><span class="three-eye"></span></div>
-          <b data-ar="المتعفن ذو العيون الثلاث">THE ROTTEN THREE-EYED</b>
-          <p data-ar="هزيل كأن الجوع لم يترك منه شيئًا، جسده متشقق كأرض ميتة وثلاث عيون تحمرّ كأنها ترى أكثر مما ينبغي. يذوب في الأرض ويظهر خلفك دون صوت.">Starved past recognition, cracked like dead earth, three warped eyes glowing a wrong red — seeing more than they should. Melts into the ground and reappears behind you without a sound.</p>
-        </div>
-        <div class="ent">
-          <div class="ent-vis">
-            <span class="silh silh-wolf"></span><span class="wolf-eye"></span><span class="wolf-eye w2"></span>
-          </div>
-          <b data-ar="ذئاب الدم">BLOOD WOLVES</b>
-          <p data-ar="أجساد أكبر من المعتاد ورقاب طويلة بشكل غير مريح؛ عيونها لا تعي جوعًا فحسب بل تفهم وتنتظر. تصطاد قطعانًا منسقة — والبشر هنا يأكلون لحمها ليبقوا أحياء.">Bigger than any wolf, necks uncomfortably long — their eyes don't just hunger, they understand and wait. They hunt in coordinated packs… and the humans here eat their flesh to stay alive.</p>
-        </div>
-        <div class="ent">
-          <div class="ent-vis">
-            <span class="priest-float"></span><span class="priest-staff"></span>
-          </div>
-          <b data-ar="الكاهن · المنظم">THE PRIEST · THE ORGANIZER</b>
-          <p data-ar="الكيان السادس: «ليس الأعلى وليس الأدنى — هو من يربط». يطفو بعصاه الحمراء فوق القبة، يجوب القطاع يلتقط البشر وينقلهم للمخيمات، وحول الكسوف يقفهم صفًّا… قرابين.">The sixth: "neither highest nor lowest — he is the one who connects." Floats above the dome with his red staff, sweeps the sector harvesting humans into camps — and at eclipse lines them up around it as offerings.</p>
-        </div>
-        <div class="ent wide">
-          <div class="ent-vis" style="height:96px">
-            <span class="aig-top"></span><span class="aig-crawl"></span><span class="candle c1"></span><span class="candle c2"></span>
-          </div>
-          <b data-ar="أيغورثال · الإله المزعوم">AIGORTHAL · THE SO-CALLED GOD</b>
-          <p data-ar="الكيان السابع الذي يظهر عند الكسوف. ليس كائنًا ولا عدَمًا: شبكة أطراف لأشخاص لم ينتهوا، وفي مركزه ضوء أحمر ينبض كإشارة تقول «أنا هنا… رغم أنني لا يجب أن أكون». جمجمة عارية، وشمعتان لا تضيئان — تظهران أن الزمن هنا يتعفن. ونصفه السفلي مخلوق مدرع زاحف… سجين في جسده، وجسده سجانه.">The seventh, arriving with the eclipse. Neither being nor nothingness: a web of limbs belonging to people who never finished, its core pulsing red like a signal — "I am here… though I should not be." A bare skull for a face; two candles above him that give no light, only proving time rots here. His lower half is another creature entirely — an armored crawler, prisoner of its own body, and its body its prison. He devours the priest alive, then feeds on thousands.</p>
-        </div>
-      </div>
-    </div>
+  <!-- ==================== WHISPER ISLE EXPERIENCE ==================== -->
+<section id="whisper" class="isle-exp" style="--tint:143,122,232;height:260svh;background:#07060c">
+  <canvas class="expCanvas" id="expWhisper"></canvas>
+  <div class="exp-ui">
+    <div class="tcard" data-tstep="0"><div class="tc-inner"><span class="tc-scan"></span><span class="tc-idx" data-ar="الكيان ١ / ٤">ENTITY I / IV</span><h3 data-ar="الهامس المدرع">The Armored Whisperer</h3><p data-ar="درع يمتص الضوء وقناع أحمر بعينين تخترق الأفكار — همسته الأولى: أنت وحدك هنا.">Light-drinking armor, a red mask whose hollow eyes pierce thought — first whisper: “You are alone here.”</p></div></div>
+    <div class="tcard" data-tstep="1"><div class="tc-inner"><span class="tc-scan"></span><span class="tc-idx" data-ar="الكيان ٢ / ٤">ENTITY II / IV</span><h3 data-ar="هامس الصدى">Echo-Whisperer</h3><p data-ar="عين جبهه لا ترى بل تتذكر — والعالم كله يعيد كلماتك كصدى سجن.">A brow-eye that remembers instead of sees — the world repeats your words back as a prison of echo.</p></div></div>
+    <div class="tcard" data-tstep="2"><div class="tc-inner"><span class="tc-scan"></span><span class="tc-idx" data-ar="الكيان ٣ / ٤">ENTITY III / IV</span><h3 data-ar="هامس الخراب">Ruin-Whisperer</h3><p data-ar="فمه حفرة سوداء — صرخته لا تصد الدماغ فقط بل تمنع الاقتراب نفسه.">A black pit for a mouth — his scream doesn't just strike the brain, it forbids approach itself.</p></div></div>
+    <div class="tcard" data-tstep="3"><div class="tc-inner"><span class="tc-scan"></span><span class="tc-idx" data-ar="الكيان ٤ / ٤">ENTITY IV / IV</span><h3 data-ar="الهامس الصامت">The Silent Whisperer</h3><p data-ar="يلغي صدى الغابة وأنفاسك ونبض قلبك — ثم يضرب في ذلك الصمت المطلق.">Erases the forest echo, your breath, your heartbeat — then strikes inside the absolute silence.</p></div></div>
+    <div class="e-step on" data-step="0"><b data-ar="هامس المدرع">THE ARMORED WHISPERER</b><p data-ar="درع يمتص الضوء… وقناع أحمر يقول: أنت وحدك هنا.">Light-drinking armor… a red mask saying: you are alone here.</p></div>
+    <div class="e-step" data-step="1"><b data-ar="هامس الصدى">ECHO-WHISPERER</b><p data-ar="عين جبهته تتذكر — والعالم يكرر كلماتك ضدها.">His brow-eye remembers — and the world repeats your words back.</p></div>
+    <div class="e-step" data-step="2"><b data-ar="هامس الخراب">RUIN-WHISPERER</b><p data-ar="فمه حفرة… صرخته تمنع الاقتراب نفسه.">A pit for a mouth — his scream forbids approach itself.</p></div>
+    <div class="e-step" data-step="3"><b data-ar="الهامس الصامت">THE SILENT WHISPERER</b><p data-ar="يلغي صوت العالم… ثم يضرب في الصمت.">He erases the world's sound… then strikes inside it.</p></div>
   </div>
 </section>
+
+<!-- ==================== BLOOD ISLE EXPERIENCE ==================== -->
+<section id="blood" class="isle-exp" style="--tint:214,69,80;height:340svh;background:#0a0608">
+  <canvas class="expCanvas" id="expBlood"></canvas>
+  <div class="exp-ui">
+    <div class="tcard" data-tstep="0"><div class="tc-inner"><span class="tc-scan"></span><span class="tc-idx" data-ar="الكيان ١ / ٧">ENTITY I / VII</span><h3 data-ar="ثالغور">Thalghor</h3><p data-ar="جسد من دم متصلب بلا وجه — عين حمراء واحدة لا ترمش، وخناجره تخرج من العدم ويحوّل البشر مسوخًا.">A faceless body of hardened blood — one unblinking red eye; his daggers come from nowhere and he twists humans into mutants.</p></div></div>
+    <div class="tcard" data-tstep="1"><div class="tc-inner"><span class="tc-scan"></span><span class="tc-idx" data-ar="الكيان ٢ / ٧">ENTITY II / VII</span><h3 data-ar="فالكريث">Falkreth</h3><p data-ar="قرنان كجذور شجرة ميّتة — وفي قفصه الصدري طفل مجنح يحتضن القلب كما يحتضن الطفل والدته.">Horns like roots of a dead tree — in his rib-cage a winged child cradles the heart the way a child holds its mother.</p></div></div>
+    <div class="tcard" data-tstep="2"><div class="tc-inner"><span class="tc-scan"></span><span class="tc-idx" data-ar="الكيان ٣ / ٧">ENTITY III / VII</span><h3 data-ar="سلاسل القبو">Chained Smile</h3><p data-ar="ظل متكثف بابتسامة مستحيلة — وسلاسل تمتد من جلده إلى شيء لا يمكن رؤيته.">Condensed shadow with an impossible grin — chains run from his skin to something unseen.</p></div></div>
+    <div class="tcard" data-tstep="3"><div class="tc-inner"><span class="tc-scan"></span><span class="tc-idx" data-ar="الكيان ٤ / ٧">ENTITY IV / VII</span><h3 data-ar="العينون الثلاث">Three-Eyed Rotten</h3><p data-ar="ثلاث عيون تحمرّ وترى أكثر مما ينبغي — يذوب في الأرض ويظهر خلفك بلا صوت.">Three glowing eyes seeing more than they should — melts into earth, reappears behind you soundless.</p></div></div>
+    <div class="tcard" data-tstep="4"><div class="tc-inner"><span class="tc-scan"></span><span class="tc-idx" data-ar="الكيان ٥ / ٧">ENTITY V / VII</span><h3 data-ar="ذئاب الدم">Blood Wolves</h3><p data-ar="عيونها تفهم وتنتظر — تصطاد قطعانًا منسقة، والبشر يأكلون لحمها ليبقوا أحياء.">Eyes that understand and wait — coordinated pack hunts; humans eat their flesh to survive.</p></div></div>
+    <div class="tcard" data-tstep="5"><div class="tc-inner"><span class="tc-scan"></span><span class="tc-idx" data-ar="الكيان ٦ / ٧ · المنظم">ENTITY VI / VII · ORGANIZER</span><h3 data-ar="الكاهن">The Priest</h3><p data-ar="ليس الأعلى ولا الأدنى — هو من يربط. عند الكسوف يقف الناس حول قبته… قرابين.">Neither highest nor lowest — he connects. At eclipse he lines people around his dome… as offerings.</p></div></div>
+    <div class="tcard" data-tstep="6"><div class="tc-inner"><span class="tc-scan"></span><span class="tc-idx" data-ar="الكيان ٧ / ٧ · عند الكسوف">ENTITY VII / VII · AT ECLIPSE</span><h3 data-ar="أيغورثال">Aigorthal</h3><p data-ar="شبكة أطراف لمن لم ينتهوا — وضوء أحمر ينبض: «أنا هنا… رغم أنني لا يجب أن أكون». التهم الكاهن حيًا ثم غذّى نفسه بالآلاف.">A web of limbs of those who never finished — a red pulse insisting: “I am here, though I should not be.” He ate the priest alive, then fed on thousands.</p></div></div>
+    <div class="e-step on" data-step="0"><b data-ar="ثالغور">THALGHOR</b><p data-ar="عين واحدة لا ترمش… وخناجره تخرج من العدم.">One unblinking eye… his daggers come from nowhere.</p></div>
+    <div class="e-step" data-step="1"><b data-ar="فالكريث">FALKRETH</b><p data-ar="في قفصه الصدري… طفل مجنح يحتضن القلب.">In his rib-cage… a winged child cradles the heart.</p></div>
+    <div class="e-step" data-step="2"><b data-ar="الكاهن — المنظم">THE PRIEST</b><p data-ar="ليس الأعلى ولا الأدنى… هو من يربط.">Neither highest nor lowest — he is the one who connects.</p></div>
+    <div class="e-step" data-step="3"><b data-ar="أيغورثال · الإله المزعوم">AIGORTHAL · THE SO-CALLED GOD</b><p data-ar="«أنا هنا… رغم أنني لا يجب أن أكون.»">“I am here… though I should not be.”</p></div>
+  </div>
+</section>
+
+<!-- HEART OF NIHILISM POSTER -->
+<section id="hon" class="hon-band rv">
+  <div class="hon-in">
+    <div class="kicker" style="color:#b3a1ff" data-ar="الموسم الثاني">SEASON II</div>
+    <h2>HEART OF NIHILISM</h2>
+    <p class="ar-h" data-ar="قلب العدم">قلب العدم</p>
+    <p class="hon-p" data-ar="ثماني سنوات لاحقًا، الاختبار لم يعد قوة — بل معنى.">Eight years later, the test is no longer strength — it's meaning.</p>
+  </div>
+</section>
+
 
 <div class="slash-div rv"></div>
 
@@ -1649,5 +1717,686 @@ window.addEventListener('load',()=>{
 });
 setTimeout(hideLoader,4200);
 </script>
+
+
+
+<script>
+window.__threeError=null;
+addEventListener('error',e=>{window.__threeError=e.message||'unknown';});
+</script>
+
+
+<script>
+/* ===== ENTITY LORE DATABASE ===== */
+const ENTITY_LORE={
+  armor:{ar:{n:"الهامس المدرع",t:"أحد الأختام الأربعة. درع أسود يمتص الضوء، وقناع أحمر بعينين فارغتين لا تنظران إليك بل تخترقان أفكارك. لا يسرع ولا يتردد — همسته الأولى «أنت وحدك هنا» تُكرَّر بنبرة صوتك حتى تشك في صانعك.",w:"الهمس يبدأ… ولا يتوقف"},
+         en:{n:"The Armored Whisperer",t:"One of the four seals. Black armor that drinks the light, a red mask with hollow eyes that pierce thought instead of looking at you. He never hurries — his first whisper, “You are alone here,” repeats in your own voice until you doubt its maker.",w:"The whisper begins… and never stops"}},
+  echo:{ar:{n:"هامس الصدى",t:"نحيل ببشرة خضراء ميتة، وعين مغلقة على جبهه لا ترى بل تتذكر. فمه ابتسامة من أسنان رفيعة مهيأة لإخراج صوت حاد يتسلل بين الكلمات — يجعل العالم كله يكرر ما قيل حتى يصير الصوت سجنًا.",w:"كل كلمة قيلت… ستعود"},
+        en:{n:"Echo-Whisperer",t:"Gaunt, dead-green skin, a closed eye on his brow that remembers instead of seeing. A smile of thin teeth built to emit a sharp tone slipping between words — he makes the whole world repeat what was said until sound becomes a prison.",w:"Every word spoken… will return"}},
+  ruin:{ar:{n:"هامس الخراب",t:"فمه حفرة سوداء مطلقة وصرخته لا تُصيب الأذن فقط بل تضرب الدماغ مباشرة: تشوش الفكر وتقطع النفس. لا يحمل درعًا — يحتمي بموجة تمنع الاقتراب نفسه؛ طالما يصرخ، لا يمكن لمسه.",w:"طالما يصرخ… لا يمكن القتراب"},
+        en:{n:"Ruin-Whisperer",t:"A mouth of absolute void; his scream doesn't just hit the ear but strikes the brain directly — scattering thought, cutting breath. He wears no armor — he shields himself with a wave that forbids approach. While he screams, he cannot be touched.",w:"While he screams… no one may come near"}},
+  silent:{ar:{n:"الهامس الصامت",t:"قناع نصفه الأيمن وحيد العين ونصفه الآخر مغلق تمامًا. يدخل فيلغي صدى الغابة ثم أنفاسك ثم نبض قلبك حتى أفكارك — عالمٌ انطفأ. وفي ذلك الصمت المطلق… يضرب.",w:"حتى صوتك… لن تسمعه"},
+         en:{n:"The Silent Whisperer",t:"Half his mask bears a single eye; the other half is sealed shut. He arrives and cancels the forest's echo, then your breath, then your heartbeat — even your thoughts. A world switched off. And inside that absolute silence… he strikes.",w:"Even your heartbeat… you won't hear"}},
+  eye:{ar:{n:"ثالغور",t:"هيئة مصهورة من دم متصلب بلا وجه ولا فم — في موضع الرأس عين واحدة حمراء عميقة لا ترمش، تدور ببطء كنواة كابوس حي. يرمي خناجره بسرعة مرعبة، وبدمه يلوّث الأرض، وبقوته يحوّل البشر إلى مسوخ يخدمونه.",w:"العين التي تراقب… تعرف أنك ستعود"},
+       en:{n:"Thalghor",t:"A form fused from hardened blood — faceless, mouthless, a single deep-red eye where the head should be. It never blinks, rotating slowly like the core of a living nightmare. His daggers fly with terrifying speed; his blood scorches earth; his power twists humans into the mutants who serve him.",w:"The watching eye… knows you'll return"}},
+  hammer:{ar:{n:"فالكريث",t:"خطيئة تمشي على أرض: قرنان كجذور شجرة ميّتة فشلت في الهرب، وعينان جمرتان تمحوان ما يقع عليه نظرهما. مطرقته ليست سلاحًا بل حكمٌ. وفي صدره قفص عظمي… بداخله طفل مجنح بقرنين يحتضن القلب كما يحتضن الطفل والدته — اقتله واقتل ما برئ معه.",w:"المطرقة ليست سلاحًا… بل حكم"},
+       en:{n:"Falkreth",t:"A sin walking on land: horns like roots of a dead tree that failed to escape, ember eyes that erase whatever they regard. His hammer is not a weapon but a verdict. In his chest, a bone cage — inside it a small horned, black-winged child cradling the heart the way a child holds its mother. Kill him, and you kill the innocence with him.",w:"The hammer is not a weapon… it is a verdict"}},
+  chains:{ar:{n:"سلاسل القبو",t:"مصنوع من ظلّ متكثف، جلده مشدود على عظام توشك أن تتمزق. عيناه فراغان أسودان يبتلعان النظر، وفمه ابتسامة مستحيلة من أسنان حادة غير متناسقة. سلاسل داكنة تلتف حوله من جلده إلى العتمة — تربطه بشيء لا يمكن رؤيته.",w:"ابتسامته تعلم ما سيحدث قبل أن يحدث"},
+       en:{n:"The Chained Smile",t:"Woven from condensed shadow, skin stretched over bones about to tear. His eyes are two swallowing voids; his mouth an impossible grin of jagged teeth. Dark chains coil from his skin into the darkness behind — binding him to something that cannot be seen.",w:"His smile knows what happens before it does"}},
+  rotten:{ar:{n:"المتعفن ذو العيون الثلاث",t:"هزيل كأن الجوع لم يترك منه شيئًا، جسده متشقق كأرض ميتة، وثلاث عيون مشوهة تحمرّ وتتوهج بنظرة فارغة ترى أكثر مما ينبغي. شيء متعفن عالق بين الحياة والموت — يذوب في الأرض ويظهر خلفك دون صوت.",w:"عالق بين الحالتين… ثابت يبتسم"},
+       en:{n:"The Rotten Three-Eyed",t:"Starved as if hunger left nothing of him, body cracked like dead earth, three warped eyes glowing an unsettling red — a vacant stare that sees more than it should. Something rotting, stuck between life and death. He melts into the ground and reappears behind you without a sound.",w:"Stuck between both states… still, smiling"}},
+  wolf:{ar:{n:"ذئاب الدم",t:"قطيع يعيش في جبل الدم: أجساد أكبر من المعتاد، رقاب طويلة بشكل غير مريح، آذان تلتقط ذبذبات خفية في الهواء. عيونها لا تعي الجوع فقط بل تفهم وتنتظر. تصطاد بهجوم منسق: اثنان من اليمين وثلاثة أمام وآخران من الخلف — والبشر هنا يأكلون لحمها ليبقوا أحياء.",w:"عيونها تراقب… تفهم… تنتظر"},
+     en:{n:"Blood Wolves",t:"A pack dwelling at Blood Mountain: bodies larger than any known wolf, necks uncomfortably long, ears catching hidden frequencies in the air. Their eyes don't merely hunger — they understand and wait. They hunt coordinated: two from the right, three ahead, two flanking behind. The humans here eat their flesh to survive.",w:"Their eyes watch… understand… wait"}},
+  priest:{ar:{n:"الكاهن — المنظم",t:"«ليس الأعلى وليس الأدنى… هو من يربط». يطفو فوق قبته بعصاه الحمراء، يجوب القطاع يلتقط البشر وينقلهم إلى المخيمات، وعند اكتمال الكسوف يقفهم حول القبة صفًّا واحدًا — قرابين لإلههم المزعوم. حين فشل… أكلَه إلهه.",w:"هو من يربط"},
+       en:{n:"The Priest — The Organizer",t:"“Neither the highest nor the lowest — he is the one who connects.” He floats above his dome with the red staff, sweeping the sector to harvest humans into camps. At full eclipse he lines them around the dome in a single ring — offerings to their so-called god. When he failed… his god ate him.",w:"He is the one who connects"}},
+  god:{ar:{n:"أيغورثال — الإله المزعوم",t:"الكيان السابع الذي يظهر عند الكسوف. ليس كائنًا ولا عدمًا: شبكة أطراف لأشخاص لم ينتهوا، لصراخات لم تُسمع. في مركزه ضوء أحمر ينبض كإشارة تقول «أنا هنا… رغم أنني لا يجب أن أكون». جمجمة عارية، شمعتان لا تضيئان لكنهما تظهران أن الزمن هنا يتعفن. نصفه السفلي مخلوق مدرع زاحف — سجين في جسده وجسده سجانه. التهم الكاهن حيًا… ثم غذّى نفسه بالآلاف.",w:"«أنا هنا… رغم أنني لا يجب أن أكون»"},
+    en:{n:"Aigorthal — The So-Called God",t:"The seventh entity, arriving with the eclipse. Neither being nor nothingness: a web of limbs belonging to people who never finished — screams that were never heard. At its core a red light pulses like a signal saying “I am here… though I should not be.” A bare skull for a face; two candles above giving no light, only proving time rots here. His lower half is another creature — an armored crawler, prisoner of its own body, and its body its prison. He ate the priest alive… then fed on thousands.",w:"“I am here… though I should not be”"}},
+};
+</script>
+
+
+
+<script>
+/* show module errors inside the canvas wrap */
+setTimeout(()=>{
+  document.querySelectorAll('.isle-canvas-wrap').forEach(w=>{
+    if(!w.querySelector('canvas')||!w.querySelector('canvas').__alive){
+      const d=document.createElement('div');
+      d.style.cssText='position:absolute;inset:auto 10px 10px 10px;font-size:.7rem;color:#ff9a94;font-family:monospace';
+      d.textContent='3D: '+(window.__threeError||'loading…');
+      w.appendChild(d);
+    }
+  });
+},6000);
+</script>
+
+<script>
+setTimeout(()=>{
+  document.querySelectorAll('.isle-canvas-wrap').forEach(w=>{
+    const c=w.querySelector('canvas');
+    if(!c||!c.__alive){
+      const d=document.createElement('div');
+      d.style.cssText='position:absolute;inset:auto 10px 10px 10px;font-size:.7rem;color:#ff9a94;font-family:monospace;z-index:9';
+      d.textContent='3D: '+(window.__threeError||'still loading… (needs internet for three.js CDN)');
+      w.appendChild(d);
+    }
+  });
+},6000);
+</script>
+
+
+<script>
+/* entity detail modal */
+(function(){
+  const EG={armor:'143,122,232',echo:'143,122,232',ruin:'143,122,232',silent:'143,122,232',
+    eye:'214,69,80',hammer:'214,69,80',chains:'214,69,80',rotten:'214,69,80',
+    wolf:'214,69,80',priest:'214,69,80',god:'214,69,80'};
+  let m=null;
+  function openE(kind){
+    const d=ENTITY_LORE[kind];if(!d)return;
+    const ar=document.documentElement.lang==='ar';
+    const L=ar?d.ar:d.en;
+    if(!m){
+      m=document.createElement('div');m.className='emodal';m.hidden=true;m.id='emodal';
+      m.innerHTML=`<div class="ecard"><button class="eclose">✕</button>
+        <div class="evis"></div><h3 class="ename"></h3><p class="etext"></p><div class="ewhisper"></div></div>`;
+      document.body.appendChild(m);
+      m.addEventListener('click',e=>{if(e.target===m)m.hidden=true});
+      m.querySelector('.eclose').onclick=()=>m.hidden=true;
+      document.addEventListener('keydown',e=>{if(e.key==='Escape')m.hidden=true});
+    }
+    m.style.setProperty('--eg',EG[kind]||'201,162,39');
+    m.querySelector('.ename').textContent=L.n;
+    m.querySelector('.etext').textContent=L.t;
+    m.querySelector('.ewhisper').textContent='“'+L.w+'”';
+    /* visual: reuse the mini silhouette from the island cards */
+    const vis=m.querySelector('.evis');
+    const proto=document.querySelector('.flyer .ent-vis.'+kind+', .fly-card [data-kind="'+kind+'"]');
+    vis.innerHTML='';
+    const src=document.querySelector('.fcard .ent-vis')?null:null;
+    /* clone matching visual from legend cards if present */
+    const legendVis=document.querySelectorAll('#korz3d .ent-vis');
+    let done=false;
+    legendVis.forEach(v=>{
+      if(done)return;
+      const kinds={ARMORED:'armor','ECHO':'echo','RUIN':'ruin','SILENT':'silent','THALGHOR':'eye',
+        FALKRETH:'hammer','CHAINED':'chains','THREE-EYED':'rotten','BLOOD WOLF':'wolf','PRIEST':'priest','AIGORTHAL':'god'};
+      const txt=v.parentElement.textContent.toUpperCase();
+      for(const k in kinds){if(txt.includes(k)&&kinds[k]===kind){vis.innerHTML=v.innerHTML;done=true;break}}
+    });
+    m.hidden=false;
+  }
+  document.addEventListener('click',e=>{
+    const c=e.target.closest('.fly-card');
+    if(c)openE(c.dataset.kind);
+  });
+})();
+</script>
+
+
+
+<script src="three.min.js"></script>
+<script>
+/* ===== AOSO CRYSTAL — PRO SHADER EDITION ===== */
+const canvas=document.getElementById('iceCanvas');
+const section=document.getElementById('crystal');
+if(canvas&&section){
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  const scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x07060e);
+  const camera=new THREE.PerspectiveCamera(50,1,.1,100);
+  camera.position.set(0,.6,8.5);
+
+  /* ---- custom vertex-displaced crystal with fresnel shader ---- */
+  const uni={
+    uTime:{value:0},
+    uGlow:{value:new THREE.Color(0x7fb2ff)},
+    uDeep:{value:new THREE.Color(0x1a2f5e)},
+    uPulse:{value:new THREE.Color(0xff3040)},
+    uOpacity:{value:1.0}
+  };
+  const vert=`
+    uniform float uTime;
+    varying vec3 vN; varying vec3 vP; varying float vY;
+    // cheap noise via sin layering
+    float n3(vec3 p){return sin(p.x*3.1+uTime)*sin(p.y*4.7-uTime*.7)*sin(p.z*3.9);}
+    void main(){
+      vec3 pos=position;
+      float d=n3(normalize(position)*2.2)*.06;
+      pos+=normal*d;
+      vN=normalize(normalMatrix*normal);
+      vec4 mv=modelViewMatrix*vec4(pos,1.);
+      vP=mv.xyz; vY=position.y;
+      gl_Position=projectionMatrix*mv;
+    }`;
+  const frag=`
+    uniform float uTime; uniform vec3 uGlow,uDeep,uPulse; uniform float uOpacity;
+    varying vec3 vN; varying vec3 vP; varying float vY;
+    void main(){
+      vec3 V=normalize(-vP);
+      float fr=pow(1.-abs(dot(vN,V)),2.2);           // fresnel rim
+      vec3 base=mix(uDeep,uGlow,vY*.5+.5);
+      // inner energy veins
+      float veins=sin(vY*22.+uTime*2.6)*sin(vP.x*14.-uTime);
+      veins=smoothstep(.86,1.,veins);
+      vec3 col=base+uGlow*fr*1.35+vec3(veins)*mix(uGlow,uPulse,.5+.5*sin(uTime*.9));
+      gl_FragColor=vec4(col,uOpacity*(.82+fr*.18));
+    }`;
+  const mat=new THREE.ShaderMaterial({uniforms:uni,vertexShader:vert,fragmentShader:frag,
+    transparent:true,side:THREE.DoubleSide});
+
+  const grp=new THREE.Group();scene.add(grp);
+  function spike(r,h,y,z,rz){
+    // crystal profile: tapered hex prism w/ pointed cap
+    const g=new THREE.CylinderGeometry(r*.08,r,h,6,1);
+    const cap=new THREE.ConeGeometry(r*.08,h*.28,6);
+    const m=new THREE.Mesh(g,mat);m.position.set(0,y+h/2,z);m.rotation.z=rz;
+    const c=new THREE.Mesh(cap,mat);c.position.set(Math.sin(-rz)*(h/2+h*.13),y+h+h*.12*Math.cos(rz),z);
+    grp.add(m,c);return [m,c];
+  }
+  [[.95,5.6,0,0,0],[.62,4.4,-.15,-.4,-.16],[.55,3.9,-.32,.42,.17],[.78,5,-.05,-.25,-.07],[.44,3.4,.3,.3,.24]]
+    .forEach(([r,h,x,z,rz])=>spike(r,h,x,z,rz));
+
+  /* the void core — shader pulsing sphere */
+  const coreMat=new THREE.ShaderMaterial({
+    uniforms:{uTime:uni.uTime},
+    vertexShader:`varying vec3 vN;varying vec3 vP;void main(){vN=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.);vP=mv.xyz;gl_Position=projectionMatrix*mv;}`,
+    fragmentShader:`uniform float uTime;varying vec3 vN;varying vec3 vP;
+      void main(){
+        vec3 V=normalize(-vP);
+        float p=.5+.5*sin(uTime*2.1);
+        float fr=pow(1.-abs(dot(vN,V)),1.6);
+        vec3 col=mix(vec3(.02,.005,.02),vec3(1.,.16,.19),p*.75+fr*.6);
+        gl_FragColor=vec4(col,.95);}`,
+    transparent:true});
+  const core=new THREE.Mesh(new THREE.IcosahedronGeometry(.52,2),coreMat);
+  grp.add(core);
+
+  /* golden rune ring (shader dashes) */
+  const ringMat=new THREE.ShaderMaterial({
+    uniforms:{uTime:uni.uTime},
+    transparent:true,side:THREE.DoubleSide,
+    vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+    fragmentShader:`uniform float uTime;varying vec2 vUv;
+      void main(){
+        float a=vUv.x*40.+uTime*1.4;
+        float dash=step(.5,fract(a));
+        float edge=smoothstep(0.,.06,vUv.y)*smoothstep(1.,.94,vUv.y);
+        gl_FragColor=vec4(vec3(.85,.64,.25),dash*edge*.85);}`});
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(2.35,.05,10,120),ringMat);
+  ring.rotation.x=Math.PI/2;ring.position.y=-2.35;grp.add(ring);
+
+  /* orbiting glass shards */
+  const shards=[];
+  for(let i=0;i<14;i++){
+    const sh=new THREE.Mesh(new THREE.OctahedronGeometry(.11+Math.random()*.14,0),
+      new THREE.MeshStandardMaterial({color:0xaecdf2,emissive:0x27406b,emissiveIntensity:.65,flatShading:true}));
+    sh.userData={r:2.4+Math.random()*1.6,a:i/14*Math.PI*2,y:(Math.random()-.5)*4,tw:.5+Math.random()};
+    grp.add(sh);shards.push(sh);
+  }
+
+  /* starfield backdrop */
+  const N=700,pos=new Float32Array(N*3);
+  for(let i=0;i<N;i++){pos[i*3]=(Math.random()-.5)*40;pos[i*3+1]=(Math.random()-.5)*26;pos[i*3+2]=-Math.random()*20}
+  const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  scene.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0x9db8ff,size:.05,transparent:true,opacity:.5})));
+
+  /* frost particles rising */
+  const M=350,fp=new Float32Array(M*3),fs=[];
+  for(let i=0;i<M;i++){fp[i*3]=(Math.random()-.5)*16;fp[i*3+1]=-6+Math.random()*10;fp[i*3+2]=(Math.random()-.5)*8;fs.push(.2+Math.random()*.5)}
+  const fg=new THREE.BufferGeometry();fg.setAttribute('position',new THREE.BufferAttribute(fp,3));
+  const frost=new THREE.Points(fg,new THREE.PointsMaterial({color:0xdbe8ff,size:.04,transparent:true,opacity:.45,depthWrite:false}));
+  scene.add(frost);
+
+  /* soft ground fog disc */
+  const fogDisc=new THREE.Mesh(new THREE.CircleGeometry(6,40),
+    new THREE.MeshBasicMaterial({color:0x16233f,transparent:true,opacity:.28}));
+  fogDisc.rotation.x=-Math.PI/2;fogDisc.position.y=-3.4;scene.add(fogDisc);
+
+  function size(){const w=canvas.clientWidth||innerWidth,h=canvas.clientHeight||innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
+  size();addEventListener('resize',size);
+
+  let prog=0;
+  function computeProg(){const r=section.getBoundingClientRect();prog=Math.min(1,Math.max(0,-r.top/(r.height-innerHeight)))}
+  addEventListener('scroll',computeProg,{passive:true});computeProg();
+  const steps=[...document.querySelectorAll('.c-step')];
+  function updUI(){
+    if(!steps.length)return;
+    const idx=Math.min(3,Math.floor(prog*4));
+    steps.forEach(st=>st.classList.toggle('on',+st.dataset.step===idx));}
+
+  const clock=new THREE.Clock();
+  function tick(){
+    requestAnimationFrame(tick);
+    const t=clock.getElapsedTime();
+    uni.uTime.value=t;
+    grp.rotation.y=t*.1;
+    core.rotation.y=-t*.4;
+    shards.forEach(sh=>{
+      sh.userData.a+=.005;
+      const a=sh.userData.a;
+      sh.position.set(Math.cos(a)*sh.userData.r,sh.userData.y+Math.sin(t*sh.userData.tw+a)*.35,Math.sin(a)*sh.userData.r*.75);
+      sh.rotation.y+=.008;sh.rotation.x+=.004;});
+    const arr=frost.geometry.attributes.position.array;
+    for(let i=0;i<M;i++){arr[i*3+1]+=fs[i]*.01;if(arr[i*3+1]>6)arr[i*3+1]=-6}
+    frost.geometry.attributes.position.needsUpdate=true;
+
+    const ang=t*.07+prog*2.8,rad=8.6-prog*4.4;
+    camera.position.set(Math.cos(ang)*rad,.6-prog*.9+Math.sin(t*.35)*.18,Math.sin(ang)*rad);
+    camera.lookAt(0,-prog*.4,0);
+    updUI();
+    renderer.render(scene,camera);
+  }
+  tick();
+  window.__CRYSTAL_OK=true;
+}
+</script>
+
+
+<script>
+/* ===== WHISPER & BLOOD ISLES — PRO STATUE EDITION ===== */
+function __reportStatueErr(msg){
+  document.querySelectorAll('.isle-exp').forEach(sec=>{
+    let d=sec.querySelector('.dbg');
+    if(!d){d=document.createElement('div');d.className='dbg';d.style.cssText='position:absolute;bottom:8px;inset-inline-start:10px;z-index:99;font:11px monospace;color:#f88;background:#000a;padding:2px 6px';sec.appendChild(d)}
+    d.textContent='ERR: '+msg;
+  });
+}
+window.addEventListener('error',e=>{__reportStatueErr(e.message)});
+try{
+const REDUCED=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- shared statue materials ---------- */
+const MAT={
+  obsidian:new THREE.MeshStandardMaterial({color:0x151020,roughness:.28,metalness:.55,flatShading:true,emissive:0x2a1f4d,emissiveIntensity:.35}),
+  bloodrock:new THREE.MeshStandardMaterial({color:0x2b1218,roughness:.3,metalness:.5,flatShading:true,emissive:0x571016,emissiveIntensity:.4}),
+  ember:new THREE.MeshStandardMaterial({color:0xff5040,emissive:0xd6273a,emissiveIntensity:1.15,roughness:.4}),
+  violet:new THREE.MeshStandardMaterial({color:0xbfaeff,emissive:0x8f7ae8,emissiveIntensity:.95,roughness:.35}),
+  jade:new THREE.MeshStandardMaterial({color:0x9fe8b8,emissive:0x3fae72,emissiveIntensity:.8,roughness:.35}),
+  pale:new THREE.MeshStandardMaterial({color:0xe8e2ff,emissive:0x8f7ae8,emissiveIntensity:.7,roughness:.4}),
+  emberFresh(){return new THREE.MeshStandardMaterial({color:0xff5040,emissive:0xd6273a,emissiveIntensity:1,roughness:.4})},
+  amber:new THREE.MeshStandardMaterial({color:0xe09b61,emissive:0xc96a2e,emissiveIntensity:.75,roughness:.45}),
+  ice:new THREE.MeshStandardMaterial({color:0x8fb8ff,emissive:0x2c4f8f,emissiveIntensity:.7,roughness:.35}),
+};
+
+/* ---------- statue builders (each returns a Group) ---------- */
+function pedestal(color){
+  const g=new THREE.Group();
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(.85,1.05,.22,8),new THREE.MeshStandardMaterial({color,roughness:.85,flatShading:true}));
+  const col=new THREE.Mesh(new THREE.CylinderGeometry(.42,.55,.5,8),base.material);col.position.y=.34;
+  const top=new THREE.Mesh(new THREE.CylinderGeometry(.68,.5,.14,8),base.material);top.position.y=.66;
+  g.add(base,col,top);return g;
+}
+function buildStatue(kind,tint){
+  const g=new THREE.Group();
+  if(kind==='armor'){ /* armored whisperer: broad silhouette + horned mask */
+    const t=pedestal(0x1c1730);t.position.y=-1.55;g.add(t);
+    const torso=new THREE.Mesh(new THREE.CylinderGeometry(.52,.68,1.5,6),MAT.obsidian);torso.position.y=.35;g.add(torso);
+    const shoulders=new THREE.Mesh(new THREE.BoxGeometry(1.7,.3,.7),MAT.obsidian);shoulders.position.y=1.05;g.add(shoulders);
+    [[-.78],[ .78]].forEach(([x])=>{const p=new THREE.Mesh(new THREE.ConeGeometry(.24,.7,5),MAT.obsidian);p.position.set(x,1.32,0);p.rotation.z=x>0?-.5:.5;g.add(p)});
+    const head=new THREE.Mesh(new THREE.IcosahedronGeometry(.4,0),MAT.obsidian);head.position.y=1.62;g.add(head);
+    const mask=new THREE.Mesh(new THREE.ConeGeometry(.26,.55,4),MAT.bloodrock);mask.position.set(0,1.66,.22);mask.rotation.x=Math.PI/2.4;g.add(mask);
+    const eyeL=new THREE.Mesh(new THREE.SphereGeometry(.055,10,8),MAT.emberFresh());eyeL.material.userData=1;eyeL.userData.pulse=true;eyeL.position.set(-.13,1.7,.33);
+    const eyeR=new THREE.Mesh(new THREE.SphereGeometry(.055,10,8),MAT.emberFresh());eyeR.userData.pulse=true;eyeR.position.set(.13,1.7,.33);g.add(eyeL,eyeR);
+    /* floating swords behind back */
+    for(let i=0;i<3;i++){const sw=new THREE.Mesh(new THREE.BoxGeometry(.07,1.5,.02),MAT.violet);
+      sw.position.set(-.7+i*.7,1.15,-.5-i*.12);sw.rotation.z=(i-1)*.35;sw.rotation.x=-.3;
+      sw.userData.floatY={sp:.9+i*.25,ph:i*2,amp:.12};sw.userData.spin=.01;g.add(sw)}
+  }
+  else if(kind==='echo'){ /* echo: thin figure + third-eye brow */
+    const t=pedestal(0x18203a);t.position.y=-1.55;g.add(t);
+    const robe=new THREE.Mesh(new THREE.ConeGeometry(.5,2.1,7),MAT.obsidian);robe.position.y=.65;g.add(robe);
+    const head=new THREE.Mesh(new THREE.SphereGeometry(.34,8,7),MAT.pale);head.position.y=1.92;g.add(head);
+    const brow=new THREE.Mesh(new THREE.SphereGeometry(.085,12,10),MAT.jade);brow.position.set(0,2.06,.27);g.add(brow);
+    const haloR=new THREE.Mesh(new THREE.TorusGeometry(.55,.02,8,48),MAT.jade);haloR.position.y=2.06;haloR.rotation.x=Math.PI/2;haloR.userData.floatY={sp:1.3,ph:0,amp:.06};haloR.userData.baseY=haloR.position.y;g.add(haloR);
+    /* orbiting sound rings */
+    for(let i=0;i<3;i++){const r=new THREE.Mesh(new THREE.TorusGeometry(.75+i*.28,.018,8,60),
+      new THREE.MeshBasicMaterial({color:0x9fe8b8,transparent:true,opacity:.5}));r.position.y=.4+i*.55;r.rotation.x=Math.PI/2;g.add(r)}
+  }
+  else if(kind==='ruin'){ /* ruin: split head with void mouth */
+    const t=pedestal(0x1c1730);t.position.y=-1.55;g.add(t);
+    const body=new THREE.Mesh(new THREE.CylinderGeometry(.4,.6,1.7,6),MAT.obsidian);body.position.y=.5;g.add(body);
+    const head=new THREE.Mesh(new THREE.IcosahedronGeometry(.44,0),MAT.obsidian);head.position.y=1.75;head.scale.z=1.25;g.add(head);
+    const mouth=new THREE.Mesh(new THREE.CircleGeometry(.2,16),new THREE.MeshBasicMaterial({color:0x000000}));
+    mouth.position.set(0,1.68,.46);g.add(mouth);
+    const teeth=[];for(let i=0;i<8;i++){const th=new THREE.Mesh(new THREE.ConeGeometry(.03,.11,4),MAT.violet);
+      const a=i/8*Math.PI*2;th.position.set(Math.cos(a)*.19,1.68+Math.sin(a)*.19,.47);th.rotation.z=-a+Math.PI/2;teeth.push(th);g.add(th)}
+    /* scream shockwave rings */
+    for(let i=0;i<2;i++){const r=new THREE.Mesh(new THREE.TorusGeometry(.6+i*.5,.02,8,48),
+      new THREE.MeshBasicMaterial({color:0xbfaeff,transparent:true,opacity:.4}));r.position.set(0,1.68,.6);g.add(r)}
+  }
+  else if(kind==='silent'){ /* silent: half-masked face, sealed half */
+    const t=pedestal(0x18203a);t.position.y=-1.55;g.add(t);
+    const cloak=new THREE.Mesh(new THREE.ConeGeometry(.56,2,7),MAT.obsidian);cloak.position.y=.6;g.add(cloak);
+    const head=new THREE.Mesh(new THREE.SphereGeometry(.38,8,7),MAT.pale);head.position.y=1.88;g.add(head);
+    const seal=new THREE.Mesh(new THREE.SphereGeometry(.39,8,7,0,Math.PI),MAT.obsidian);seal.position.copy(head.position);seal.rotation.y=Math.PI/2;g.add(seal);
+    const eye=new THREE.Mesh(new THREE.SphereGeometry(.06,10,8),MAT.violet);eye.position.set(-.13,1.93,.31);g.add(eye);
+    const mute=new THREE.Mesh(new THREE.TorusGeometry(.16,.02,8,24),MAT.violet);mute.position.set(.3,2.25,.3);mute.rotation.z=.8;g.add(mute);
+    const bar=new THREE.Mesh(new THREE.BoxGeometry(.3,.025,.025),MAT.violet);bar.position.copy(mute.position);bar.rotation.z=-.8;g.add(bar);
+  }
+  else if(kind==='eye'){ /* thalghor: giant one-eyed sphere idol */
+    const t=pedestal(0x2b1015);t.position.y=-1.55;g.add(t);
+    const body=new THREE.Mesh(new THREE.SphereGeometry(.75,10,8),MAT.bloodrock);body.position.y=1.15;body.scale.y=1.15;g.add(body);
+    const spikes=8;
+    for(let i=0;i<spikes;i++){const sp=new THREE.Mesh(new THREE.ConeGeometry(.1,.5,4),MAT.bloodrock);
+      const a=i/spikes*Math.PI*2;sp.position.set(Math.cos(a)*.72,1.15+Math.sin(a)*.82,Math.sin(a)*.3);sp.rotation.z=a-Math.PI/2;g.add(sp)}
+    const eyeball=new THREE.Mesh(new THREE.SphereGeometry(.42,24,18),
+      new THREE.MeshStandardMaterial({color:0xd6273a,emissive:0xd6273a,emissiveIntensity:.9,roughness:.3}));
+    eyeball.material=MAT.emberFresh();eyeball.userData.pulse=true;eyeball.position.set(0,1.3,.42);g.add(eyeball);
+    const pupil=new THREE.Mesh(new THREE.SphereGeometry(.17,14,10),new THREE.MeshStandardMaterial({color:0x12060a}));
+    pupil.position.set(0,1.3,.74);g.add(pupil);
+    /* daggers stuck around pedestal */
+    for(let i=0;i<5;i++){const d=new THREE.Mesh(new THREE.BoxGeometry(.05,.9,.015),MAT.ember);
+      const a=i/5*Math.PI*2;d.position.set(Math.cos(a)*.95,-1.1,Math.sin(a)*.95);d.rotation.z=Math.cos(a)*.7;d.rotation.x=Math.sin(a)*.7;g.add(d)}
+  }
+  else if(kind==='hammer'){ /* falkreth: horns + hammer + caged heart */
+    const t=pedestal(0x2b1015);t.position.y=-1.55;g.add(t);
+    const body=new THREE.Mesh(new THREE.CylinderGeometry(.5,.66,1.6,6),MAT.bloodrock);body.position.y=.4;g.add(body);
+    [[-.5,.35],[.5,-.35]].forEach(([x,rz])=>{const h=new THREE.Mesh(new THREE.ConeGeometry(.13,1.1,5),MAT.obsidian);
+      h.position.set(x*1.3,1.75,0);h.rotation.z=rz*-1.2-x>0?.9:-.9;g.add(h)});
+    const head=new THREE.Mesh(new THREE.IcosahedronGeometry(.36,0),MAT.bloodrock);head.position.y=1.5;g.add(head);
+    /* caged heart in chest */
+    const cage=new THREE.Mesh(new THREE.CylinderGeometry(.3,.34,.5,8,1,true),
+      new THREE.MeshStandardMaterial({color:0x571016,side:THREE.DoubleSide,wireframe:true}));
+    cage.position.set(0,.75,.5);g.add(cage);
+    const heart=new THREE.Mesh(new THREE.OctahedronGeometry(.16,0),MAT.emberFresh());heart.userData.pulse=true;heart.userData.floatY={sp:2.2,ph:1,amp:.05};heart.position.set(0,.75,.5);heart.userData.baseY=.75;g.add(heart);
+    /* the hammer leaning on shoulder */
+    const handle=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,1.7),new THREE.MeshStandardMaterial({color:0x1c1418}));
+    handle.position.set(.75,1.15,.15);handle.rotation.z=-.55;g.add(handle);
+    const block=new THREE.Mesh(new THREE.BoxGeometry(.42,.3,.3),MAT.obsidian);
+    block.position.set(1.15,1.85,.15);block.rotation.z=-.55;g.add(block);
+  }
+  else if(kind==='chains'){ /* chained smile: grinning shadow w/ chains */
+    const t=pedestal(0x1c1730);t.position.y=-1.55;g.add(t);
+    const body=new THREE.Mesh(new THREE.CylinderGeometry(.42,.58,1.7,6),MAT.obsidian);body.position.y=.45;g.add(body);
+    const head=new THREE.Mesh(new THREE.IcosahedronGeometry(.4,0),MAT.obsidian);head.position.y=1.7;g.add(head);
+    const grin=new THREE.Mesh(new THREE.TorusGeometry(.21,.035,6,20,Math.PI),MAT.ember);
+    grin.position.set(0,1.6,.36);grin.rotation.x=Math.PI/2.3;grin.rotation.z=Math.PI;g.add(grin);
+    for(let i=0;i<6;i++){const th=new THREE.Mesh(new THREE.BoxGeometry(.04,.07,.03),MAT.pale);
+      const a=Math.PI+.2+i*(Math.PI-.4)/5;th.position.set(Math.cos(a)*.2,1.63+Math.sin(a)*.08,.4);g.add(th)}
+    /* chains from arms into dark */
+    for(let i=0;i<2;i++){const ch=new THREE.Group();let py=.9;
+      for(let j=0;j<6;j++){const link=new THREE.Mesh(new THREE.TorusGeometry(.07,.02,6,10),MAT.ember);
+        link.position.set((i?1:-1)*(.62+j*.1),py-j*.28,(j%2?0:.05));link.rotation.y=j*.6;ch.add(link)}
+      g.add(ch)}
+  }
+  else if(kind==='rotten'){ /* rotten three-eyed: cracked hunched figure */
+    const t=pedestal(0x2b1015);t.position.y=-1.55;g.add(t);
+    const hump=new THREE.Mesh(new THREE.SphereGeometry(.62,7,6),MAT.bloodrock);hump.position.y=1.05;hump.scale.set(1,.8,.9);g.add(hump);
+    const head=new THREE.Mesh(new THREE.SphereGeometry(.34,7,6),MAT.bloodrock);head.position.set(.15,1.62,.1);g.add(head);
+    [[-.1,.12],[.28,.05],[.12,-.28]].forEach(([x,y],i)=>{
+      const e=new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),MAT.amber);
+      e.position.set(x+(i===2?.1:0),1.68+y,i===2?-.3:.32);g.add(e)});
+    const arm=new THREE.Mesh(new THREE.CylinderGeometry(.09,.13,1.2,5),MAT.bloodrock);
+    arm.position.set(-.55,.75,0);arm.rotation.z=.9;arm.rotation.x=.3;g.add(arm);
+    /* ground cracks */
+    for(let i=0;i<4;i++){const cr=new THREE.Mesh(new THREE.BoxGeometry(1.3,.02,.05),MAT.amber);
+      cr.position.set(0,-1.42,0);cr.rotation.y=i*Math.PI/4;cr.scale.x=.7+i*.12;g.add(cr)}
+  }
+  else if(kind==='wolf'){ /* blood wolf statue: full quadruped */
+    const t=pedestal(0x2b1015);t.position.y=-1.55;t.scale.setScalar(1.15);g.add(t);
+    const bodyM=MAT.bloodrock;
+    const body=new THREE.Mesh(new THREE.CylinderGeometry(.32,.32,1.15,8),bodyM);
+    body.rotation.z=Math.PI/2;body.position.y=.85;g.add(body);
+    const neck=new THREE.Mesh(new THREE.CylinderGeometry(.18,.26,.7,6),bodyM);neck.position.set(.75,1.25,0);neck.rotation.z=-.7;g.add(neck);
+    const head=new THREE.Mesh(new THREE.ConeGeometry(.24,.62,6),bodyM);head.position.set(1.05,1.6,0);head.rotation.z=-2.2;g.add(head);
+    [[-1],[-.45],[.45],[1]].forEach(([x])=>{const leg=new THREE.Mesh(new THREE.CylinderGeometry(.07,.05,.75,5),bodyM);
+      leg.position.set(x,.35,x>0?.18:-.18);g.add(leg)});
+    const tail=new THREE.Mesh(new THREE.ConeGeometry(.09,.7,5),bodyM);tail.position.set(-.85,1.05,0);tail.rotation.z=2.4;g.add(tail);
+    [[.98,1.62],[1.12,1.55]].forEach(([x,y])=>{const ey=new THREE.Mesh(new THREE.SphereGeometry(.05,8,6),MAT.emberFresh());
+      ey.userData.pulse=true;ey.position.set(x,y,.12);g.add(ey)});
+  }
+  else if(kind==='priest'){ /* priest: robed floating figure with staff */
+    const ringF=new THREE.Mesh(new THREE.TorusGeometry(.9,.03,8,48),new THREE.MeshBasicMaterial({color:0xd64550}));
+    ringF.rotation.x=Math.PI/2;ringF.position.y=-1.2;g.add(ringF);
+    const robe=new THREE.Mesh(new THREE.ConeGeometry(.55,2.3,7),new THREE.MeshStandardMaterial({color:0x241c30,roughness:.6,flatShading:true}));
+    robe.position.y=.55;g.add(robe);
+    const hood=new THREE.Mesh(new THREE.ConeGeometry(.34,.7,6),robe.material);hood.position.y=1.95;g.add(hood);
+    const face=new THREE.Mesh(new THREE.CircleGeometry(.14,12),new THREE.MeshBasicMaterial({color:0x000000}));
+    face.position.set(0,1.82,.3);face.rotation.x=-.15;g.add(face);
+    const staff=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,2.6),new THREE.MeshStandardMaterial({color:0x1c1418}));
+    staff.position.set(.72,.9,0);staff.rotation.z=-.12;g.add(staff);
+    const orb=new THREE.Mesh(new THREE.SphereGeometry(.13,14,10),MAT.emberFresh());orb.userData.pulse=true;orb.userData.floatY={sp:1.7,ph:.5,amp:.08};orb.position.set(.83,2.25,0);orb.userData.baseY=2.25;g.add(orb);
+    const light=new THREE.PointLight(0xd64550,4,6);light.position.set(.83,2.2,.2);g.add(light);
+  }
+  else if(kind==='god'){ /* aigorthal: wireframe god-form with inner light */
+    const shell=new THREE.Mesh(new THREE.IcosahedronGeometry(1.35,1),
+      new THREE.MeshStandardMaterial({color:0x191320,emissive:0xb31d28,emissiveIntensity:.55,wireframe:true,transparent:true,opacity:.85}));
+    g.add(shell);
+    const inner=new THREE.Mesh(new THREE.IcosahedronGeometry(.55,1),
+      new THREE.MeshStandardMaterial({color:0x11060a,emissive:0xd6273a,emissiveIntensity:1.1,flatShading:true}));
+    inner.userData.pulse=true;
+    g.add(inner);
+    const l=new THREE.PointLight(0xd6273a,5,8);g.add(l);
+    /* orbiting limb fragments */
+    for(let i=0;i<10;i++){
+      const limb=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,.5,6),
+        new THREE.MeshStandardMaterial({color:0x191320,emissive:0x571016,emissiveIntensity:.5}));
+      const a=i/10*Math.PI*2;
+      limb.position.set(Math.cos(a)*1.7,Math.sin(i*2.1)*.9,Math.sin(a)*1.7);
+      limb.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3);
+      limb.userData={orbitA:a,orbitR:1.7,orbitSp:.5+i*.06};g.add(limb);
+    }
+  }
+  return g;
+}
+
+/* expose builder to scene code */
+window.__buildStatue=buildStatue;
+
+function makeExp(canvasId,opts){
+  const __step=m=>{document.querySelectorAll('.isle-exp').forEach(sec=>{let d=sec.querySelector('.dbg');if(d)d.textContent='makeExp['+canvasId+']: '+m})};
+  const canvas=document.getElementById(canvasId);
+  const section=canvas.closest('section');
+  __step('creating renderer');
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  const scene=new THREE.Scene();
+  scene.background=new THREE.Color(opts.bg);
+  const camera=new THREE.PerspectiveCamera(46,1,.1,120);
+  camera.position.set(0,1.4,9);
+
+  __step('scene+lights');
+  scene.add(new THREE.AmbientLight(0x8888aa,.6));
+  const hemi=new THREE.HemisphereLight(0xbfc8ff,0x1a1224,.7);scene.add(hemi);
+  const key=new THREE.DirectionalLight(0xffffff,1.7);key.position.set(-4,7,6);scene.add(key);
+  const rim=new THREE.DirectionalLight(opts.glowC||0x9a84ff,1.35);rim.position.set(5,-2,-6);scene.add(rim);
+  /* soft shadow/glow disc on island top under statue */
+  const gdisc=new THREE.Mesh(new THREE.CircleGeometry(1.15,32),
+    new THREE.MeshBasicMaterial({color:opts.glow,transparent:true,opacity:.14}));
+  gdisc.rotation.x=-Math.PI/2;gdisc.position.y=.56;
+
+  /* stage spotlight follows active statue */
+  const spot=new THREE.SpotLight(0xffffff,60,18,.5,.45);
+  spot.position.set(0,7,4);
+  const spotTarget=new THREE.Object3D();spotTarget.position.set(0,1,0);
+  scene.add(spotTarget);spot.target=spotTarget;scene.add(spot);
+
+  __step('island');
+  /* island */
+  const world=new THREE.Group();scene.add(world);
+  world.add(gdisc);
+  const cone=new THREE.Mesh(new THREE.ConeGeometry(3.1,5.4,9),new THREE.MeshStandardMaterial({color:opts.rock,roughness:.95,flatShading:true}));
+  cone.rotation.x=Math.PI;cone.position.y=-2.8;world.add(cone);
+  const slab=new THREE.Mesh(new THREE.CylinderGeometry(3,2.8,.55,9),new THREE.MeshStandardMaterial({color:opts.top,roughness:.85}));
+  slab.position.y=.26;slab.rotation.y=.35;world.add(slab);
+  const gring=new THREE.Mesh(new THREE.TorusGeometry(2.3,.028,8,64),
+    new THREE.MeshBasicMaterial({color:opts.glow,transparent:true,opacity:.5}));
+  gring.rotation.x=Math.PI/2;gring.position.y=.58;world.add(gring);
+  for(let i=0;i<8;i++){
+    const m=new THREE.Mesh(new THREE.OctahedronGeometry(.2+Math.random()*.18,0),
+      new THREE.MeshStandardMaterial({color:opts.shard,roughness:.9,flatShading:true}));
+    const a=i/8*Math.PI*2,r=1+Math.random()*1.4;
+    m.position.set(Math.cos(a)*r,-1.1-Math.random()*2.4,Math.sin(a)*r);
+    world.add(m);
+  }
+
+  /* statues — one per entity, shown one at a time */
+  __step('building statues');
+  const statues=opts.entities.map(cfg=>{
+    const st=window.__buildStatue(cfg.kind);
+    st.position.set(0,.9,0);
+    st.visible=false;st.scale.setScalar(.001);
+    world.add(st);return st;
+  });
+
+  function size(){const w=canvas.clientWidth,h=canvas.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
+  new ResizeObserver(size).observe(canvas.parentElement);size();
+
+  __step('binding scroll');
+  let prog=0,active=-1,lastSwitch=0,inView=true;
+  const steps=[...section.querySelectorAll('.e-step')];
+  const tcards=[...section.querySelectorAll('.tcard')];
+  function computeProg(){const r=section.getBoundingClientRect();prog=Math.min(1,Math.max(0,-r.top/(r.height-innerHeight)))}
+  addEventListener('scroll',computeProg,{passive:true});computeProg();
+  function viewGate(){
+    const r=section.getBoundingClientRect();
+    const vis=r.top<innerHeight*.55&&r.bottom>innerHeight*.45;
+    if(vis!==inView){inView=vis;
+      if(!vis)tcards.forEach(tc=>tc.classList.remove('on','glitch-in'));
+      else{active=-1;setActive(Math.min(opts.entities.length-1,Math.floor(prog*opts.entities.length)))}}
+  }
+  function setActive(idx){
+    if(!inView||idx===active)return;active=idx;
+    steps.forEach(st=>st.classList.toggle('on',+st.dataset.step===idx));
+    tcards.forEach(tc=>{const on=+tc.dataset.tstep===idx;tc.classList.toggle('on',on);
+      if(on){tc.classList.remove('glitch-in');void tc.offsetWidth;tc.classList.add('glitch-in')}});
+    lastSwitch=performance.now();
+  }
+
+  let emberSys=null,es=[];
+  const clock=new THREE.Clock();
+  let __reported=false;
+  function tick(){
+    requestAnimationFrame(tick);
+    try{
+    viewGate();
+    const t=clock.getElapsedTime();
+    const idx=Math.min(opts.entities.length-1,Math.floor(prog*opts.entities.length));
+    setActive(idx);
+    const since=(performance.now()-lastSwitch)/1000;
+    statues.forEach((st,i)=>{
+      const on=i===idx;
+      st.visible=on;if(!on)return;
+      const k=Math.min(1,since/.7),e=1-Math.pow(1-k,3);
+      const jit=k<1?(1-k)*.16:0;
+      st.scale.setScalar(e*(1+jit*Math.sin(t*70+i)*.5)+.001);
+      st.position.x=jit>0?(Math.random()-.5)*jit:0;
+      if(!REDUCED)st.rotation.y=t*.25;
+    });
+    if(!REDUCED){
+      world.rotation.y=t*.03;
+      gring.rotation.z=t*.15;
+      /* statue idle life */
+      const st=statues[idx];
+      if(st){
+        st.rotation.y=t*.25;
+        /* breathe: subtle scale pulse */
+        if(since>1){const br=1+Math.sin(t*1.4)*.012;st.scale.y=st.scale.x*br;}
+        /* named-part animations */
+        st.traverse(o=>{
+          if(o.userData.spin)o.rotation.z+=o.userData.spin;
+          if(o.userData.floatY){const by=o.userData.baseY??o.position.y;o.position.y=by+Math.sin(t*o.userData.floatY.sp+o.userData.floatY.ph)*o.userData.floatY.amp}
+          if(o.userData.pulse&&o.material&&o.material.emissiveIntensity!==undefined){o.material.emissiveIntensity=.8+Math.abs(Math.sin(t*2+o.id))*.9}
+          if(o.userData.orbitA!==undefined){const a=o.userData.orbitA+t*(o.userData.orbitSp||.6);
+            o.position.x=Math.cos(a)*o.userData.orbitR;o.position.z=Math.sin(a)*o.userData.orbitR;o.rotation.y+=.01}
+        });
+      }
+    }
+    /* rising ember particles around active statue */
+    if(!emberSys){
+      const M2=140,pp=new Float32Array(M2*3);es=[];
+      for(let i=0;i<M2;i++){pp[i*3]=(Math.random()-.5)*5;pp[i*3+1]=-1.5+Math.random()*5;pp[i*3+2]=(Math.random()-.5)*5;es.push(.15+Math.random()*.35)}
+      const eg=new THREE.BufferGeometry();eg.setAttribute('position',new THREE.BufferAttribute(pp,3));
+      emberSys=new THREE.Points(eg,new THREE.PointsMaterial({color:opts.glow,size:.05,transparent:true,opacity:.55,depthWrite:false}));
+      scene.add(emberSys);
+    }
+    {const arr=emberSys.geometry.attributes.position.array;
+     for(let i=0;i<arr.length/3;i++){arr[i*3+1]+=es[i]*.008;if(arr[i*3+1]>4)arr[i*3+1]=-1.5}
+     emberSys.geometry.attributes.position.needsUpdate=true;}
+    const stepProg=(prog*opts.entities.length)%1;
+    const ang=t*.05+prog*3,rad=8.6-prog*2.6-Math.sin(stepProg*Math.PI)*1.6;
+    camera.position.set(Math.cos(ang)*rad,1.5+Math.sin(prog*6.28)*.7,Math.sin(ang)*rad);
+    camera.lookAt(0,1.15,0);
+    renderer.render(scene,camera);
+    }catch(err){ if(!__reported){__reported=true;if(window.__reportStatueErr)__reportStatueErr('FRAME: '+err.message);console.error(err);} }
+  }
+  tick();
+  window.__STATUES_OK=true;
+}
+
+makeExp('expWhisper',{
+  bg:0x07060c,rock:0x2b2836,top:0x403a4e,glow:0xa793ff,shard:0x4b4460,
+  entities:[{kind:'armor'},{kind:'echo'},{kind:'ruin'},{kind:'silent'}]});
+makeExp('expBlood',{
+  bg:0x0a0608,rock:0x37242c,top:0x4d333c,glow:0xff6b5e,glowC:0xff6b5e,shard:0x57323a,
+  entities:[{kind:'eye'},{kind:'hammer'},{kind:'chains'},{kind:'rotten'},{kind:'wolf'},{kind:'priest'},{kind:'god'}]});
+}catch(err){
+  console.error('STATUE FATAL:',err&&err.stack);
+  if(window.__reportStatueErr)__reportStatueErr('FATAL: '+(err&&err.message));
+}
+</script>
+
+
+<script>
+/* global card police: no fixed card outside its own section */
+(function(){
+  function enforce(){
+    document.querySelectorAll('.isle-exp').forEach(sec=>{
+      const r=sec.getBoundingClientRect();
+      const vis=r.top<innerHeight*.55&&r.bottom>innerHeight*.45;
+      if(!vis){
+        sec.querySelectorAll('.tcard.on,.e-step.on').forEach(el=>el.classList.remove('on','glitch-in'));
+      }
+    });
+  }
+  addEventListener('scroll',enforce,{passive:true});
+  addEventListener('resize',enforce);
+  setInterval(enforce,400); /* safety net */
+  enforce();
+})();
+</script>
+
+
+<script>
+/* visible 3D status chips */
+addEventListener('load',()=>{
+  setTimeout(()=>{
+    document.querySelectorAll('.isle-exp').forEach(sec=>{
+      const c=sec.querySelector('canvas');
+      const which=sec.id==='whisper'?'__STATUES_OK':'__CRYSTAL_OK';
+      const ok=c&&c.clientWidth>0&&!!window[which];
+      const chip=document.createElement('div');
+      chip.style.cssText='position:absolute;top:10px;inset-inline-end:12px;z-index:50;font:600 11px monospace;padding:4px 8px;border-radius:3px;'+(ok?'background:#14351f;color:#7de89a':'background:#3a1216;color:#ff9a94');
+      chip.textContent=ok?'3D ACTIVE':(c&&c.clientWidth>0?'LOADING…':'canvas 0px');
+      sec.appendChild(chip);
+    });
+  },2500);
+});
+</script>
+
+
+<script>
+/* TEMP DEBUG OVERLAY */
+setInterval(()=>{
+  let t='';
+  const wc=document.getElementById('expWhisper'),bc=document.getElementById('expBlood');
+  t+='W:'+ (wc?wc.clientWidth+'x'+wc.clientHeight:'-')+' ';
+  t+='B:'+(bc?bc.clientWidth+'x'+bc.clientHeight:'-')+' ';
+  t+='THREE:'+(window.THREE?window.THREE.REVISION||'yes':'NO')+' ';
+  const chipLen=document.querySelectorAll('.tcard.on').length;
+  t+='cards:'+chipLen;
+  document.querySelectorAll('.isle-exp').forEach(sec=>{
+    let d=sec.querySelector('.dbg');
+    if(!d){d=document.createElement('div');d.className='dbg';
+      d.style.cssText='position:absolute;bottom:8px;inset-inline-start:10px;z-index:99;font:11px monospace;color:#0f0;background:#000a;padding:2px 6px';
+      sec.appendChild(d)}
+    d.textContent=t;
+  });
+},900);
+</script>
+
 </body>
 </html>
