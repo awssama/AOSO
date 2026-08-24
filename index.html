@@ -157,15 +157,22 @@ document.querySelectorAll('img').forEach(im=>{
 })();
 
 
-/* hero title letters */
+/* hero title letters — self-contained reveal (no class gates) */
 (function(){
   const h=document.getElementById('heroTitle');if(!h)return;
   const txt=h.textContent.trim();h.textContent='';
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   txt.split('').forEach((ch,i)=>{
     const sp=document.createElement('span');
     sp.textContent=ch;
-    sp.style.animationDelay=(.15+i*.13)+'s';
+    if(reduce){sp.style.opacity=1;h.appendChild(sp);return}
     h.appendChild(sp);
+    setTimeout(()=>{
+      sp.animate([
+        {opacity:0,transform:'translateY(.35em) rotate(5deg)',filter:'blur(9px)'},
+        {opacity:1,transform:'none',filter:'none'}
+      ],{duration:850,easing:'cubic-bezier(.2,.7,.2,1)',fill:'forwards'});
+    },150+i*130);
   });
 })();
 
@@ -197,7 +204,7 @@ document.querySelectorAll('img').forEach(im=>{
  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;
  transition:opacity .9s cubic-bezier(.6,0,.3,1),visibility .9s;overflow:hidden}
 #loader::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 80% at 50% 45%,transparent 40%,rgba(0,0,0,.75));pointer-events:none}
-#loader.done{opacity:0;visibility:hidden}
+#loader.done{opacity:0;visibility:hidden;pointer-events:none!important;display:none}
 .ld-stars{position:absolute;inset:0;pointer-events:none}
 .ld-star{position:absolute;width:2px;height:2px;border-radius:50%;background:#d8cdb8;opacity:.25;animation:starTw 3s ease-in-out infinite}
 @keyframes starTw{0%,100%{opacity:.12}50%{opacity:.7}}
@@ -235,7 +242,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1100;background:rgba(14,13,16,.8
 #burger{display:none;background:none;border:1px solid var(--line2);color:var(--paper);padding:5px 12px;border-radius:3px;cursor:pointer;font-size:1rem;margin-inline-start:auto}
 
 /* ---------- hero : split editorial ---------- */
-.hero{min-height:92svh;display:grid;grid-template-columns:minmax(0,1.55fr) minmax(280px,.7fr);position:relative;;background:
+.hero{min-height:92vh;min-height:92svh;display:grid;grid-template-columns:minmax(0,1.55fr) minmax(280px,.7fr);position:relative;;background:
  radial-gradient(1200px 500px at 82% -10%,rgba(217,164,65,.07),transparent 60%),
  radial-gradient(900px 480px at -8% 108%,rgba(179,29,40,.08),transparent 60%),var(--ink)}
 .hero::after{content:"";position:absolute;inset:0;pointer-events:none;
@@ -648,13 +655,7 @@ html[dir="rtl"] #topBtn{inset-inline-end:auto;inset-inline-start:22px}
 @keyframes hL{to{opacity:1;transform:none;filter:none}}
 
 /* hero title letters — run after loader */
-#heroTitle span{display:inline-block;opacity:0;transform:translateY(.35em) rotate(5deg);filter:blur(9px)}
-body.loaded #heroTitle span{animation:hL .85s cubic-bezier(.2,.7,.2,1) forwards}
-body.loaded .arn-title,body.loaded .hero-tag,body.loaded .season-chips,body.loaded .ctas{animation:fadeUp2 .8s ease both}
-body.loaded .arn-title{animation-delay:.75s}
-body.loaded .hero-tag{animation-delay:.95s}
-body.loaded .season-chips{animation-delay:1.1s}
-body.loaded .ctas{animation-delay:1.25s}
+#heroTitle span{display:inline-block}
 @keyframes fadeUp2{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 
 /* 1. cinematic letterbox bars on hero (film intro feel) */
@@ -697,7 +698,7 @@ html[dir="rtl"] .news{transform:translateX(26px)}
 
 /* ---------- isle experiences ---------- */
 .isle-exp{position:relative}
-.expCanvas{position:sticky;top:0;width:100%;height:100svh;display:block}
+.expCanvas{position:sticky;top:0;width:100%;height:100vh;height:100svh;display:block}
 .exp-ui{pointer-events:none}
 .e-step{position:absolute;inset-inline-start:clamp(22px,5vw,80px);bottom:clamp(80px,12vh,140px);max-width:460px;opacity:0;transform:translateY(26px);transition:.7s cubic-bezier(.2,.7,.2,1)}
 .e-step.on{opacity:1;transform:none}
@@ -707,7 +708,7 @@ html.lang-ar .e-step b{font-family:'Amiri',serif}
 #blood .e-step b{text-shadow:0 2px 26px rgba(214,69,80,.55)}
 .e-step p{color:#a9a4b8;font-size:.98rem;line-height:1.75;text-shadow:0 1px 12px rgba(0,0,0,.9)}
 /* ---------- HON poster band ---------- */
-.hon-band{position:relative;min-height:88svh;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;;background:
+.hon-band{position:relative;min-height:88vh;height:88svh;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;;background:
  radial-gradient(1000px 500px at 50% 120%,rgba(143,122,232,.16),transparent 65%),
  radial-gradient(800px 400px at 50% -20%,rgba(179,29,40,.12),transparent 60%),#07060b}
 .hon-band::before{content:"";position:absolute;inset:-40%;
@@ -812,6 +813,23 @@ html[dir="rtl"] .raven-layer{inset:0}
 @media(max-width:640px){.raven{width:52px;height:33px}.raven.near{width:68px;height:43px}.raven.far{width:36px;height:23px}}
 @media(prefers-reduced-motion:reduce){.raven{display:none}}
 
+
+/* music toggle */
+#musicToggle:hover{opacity:1;color:var(--ember);border-color:var(--ember-dim)}
+#musicToggle.on{color:var(--gold2);border-color:rgba(217,164,65,.5);opacity:1}
+#musicToggle.on #mDisc{animation:mDiscSpin 2.6s linear infinite;box-shadow:0 0 12px rgba(217,164,65,.35)}
+@keyframes mDiscSpin{to{transform:rotate(360deg)}}
+@media(max-width:640px){#musicToggle{bottom:74px;padding:8px 13px;font-size:.68rem}}
+html[dir="rtl"] #musicToggle{left:auto;right:76px}
+
+
+/* ---------- 3D logo intro section ---------- */
+.logo3d-sec{position:relative;height:280vh;height:280svh;background:#050409}
+#c3dHero{position:sticky;top:0;width:100%;height:100vh;height:100svh;display:block}
+.logo3d-hint{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);
+ font-size:.66rem;letter-spacing:.4em;color:#6d6880;text-transform:uppercase;pointer-events:none;
+ animation:bob 2.2s infinite}
+
 /* ---------- reveal ---------- */
 .rv{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
 .rv.visible{opacity:1;transform:none}
@@ -884,8 +902,10 @@ html[dir="rtl"] #adminFab{left:auto;right:20px}
   .nav-cta{width:fit-content}
 }
 </style>
+
 </head>
 <body>
+
 
 <div id="loader" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:#08070a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;z-index:99999">
   <div class="ld-stars" id="ldStars"></div>
@@ -914,6 +934,11 @@ html[dir="rtl"] #adminFab{left:auto;right:20px}
 </nav>
 
 <!-- ==================== HERO ==================== -->
+<section class="logo3d-sec" id="logo3d" aria-label="AOSO">
+  <canvas id="c3dHero"></canvas>
+  <div class="logo3d-hint" data-ar="مرّر للدخول إلى الملحمة ↓">SCROLL TO ENTER THE SAGA ↓</div>
+</section>
+
 <header class="hero">
   <div class="embers" id="embers"></div>
   <div class="hero-main">
@@ -972,8 +997,8 @@ html[dir="rtl"] #adminFab{left:auto;right:20px}
 </section>
 
 <!-- ==================== KORZ CRYSTAL EXPERIENCE ==================== -->
-<section id="crystal" style="position:relative;height:300svh;background:#050409">
-  <canvas id="iceCanvas" style="position:sticky;top:0;width:100%;height:100svh;display:block"></canvas>
+<section id="crystal" style="position:relative;height:300vh;height:300svh;background:#050409">
+  <canvas id="iceCanvas" style="position:sticky;top:0;width:100%;height:100vh;height:100svh;display:block"></canvas>
   <div class="crys-ui" id="crysUi">
     <div class="c-step" data-step="0"><b data-ar="النواة">THE CORE</b><p data-ar="في قلب الكورز… نواةُ عدمٍ محبوسة في بلّورة.">At the heart of the Korz — a nucleus of nothing, sealed in crystal.</p></div>
     <div class="c-step" data-step="1"><b data-ar="الأختام الأربعة">FOUR SEALS</b><p data-ar="أربعة همسات تحرس الطريق. اكسرهم… لتفتح ما لا يجب فتحه.">Four whispers guard the way. Break them… to open what should stay closed.</p></div>
@@ -1084,7 +1109,7 @@ html[dir="rtl"] #adminFab{left:auto;right:20px}
 </section>
 
   <!-- ==================== WHISPER ISLE EXPERIENCE ==================== -->
-<section id="whisper" class="isle-exp" style="--tint:143,122,232;height:260svh;background:#07060c">
+<section id="whisper" class="isle-exp" style="--tint:143,122,232;height:260vh;height:260svh;background:#07060c">
   <canvas class="expCanvas" id="expWhisper"></canvas>
   <div class="exp-ui">
     <div class="tcard" data-tstep="0"><div class="tc-inner"><span class="tc-scan"></span><span class="tc-idx" data-ar="الكيان ١ / ٤">ENTITY I / IV</span><h3 data-ar="الهامس المدرع">The Armored Whisperer</h3><p data-ar="درع يمتص الضوء وقناع أحمر بعينين تخترق الأفكار — همسته الأولى: أنت وحدك هنا.">Light-drinking armor, a red mask whose hollow eyes pierce thought — first whisper: “You are alone here.”</p></div></div>
@@ -1099,7 +1124,7 @@ html[dir="rtl"] #adminFab{left:auto;right:20px}
 </section>
 
 <!-- ==================== BLOOD ISLE EXPERIENCE ==================== -->
-<section id="blood" class="isle-exp" style="--tint:214,69,80;height:340svh;background:#0a0608">
+<section id="blood" class="isle-exp" style="--tint:214,69,80;height:340vh;height:340svh;background:#0a0608">
   <canvas class="expCanvas" id="expBlood"></canvas>
   <div class="exp-ui">
     <div class="tcard" data-tstep="0"><div class="tc-inner"><span class="tc-scan"></span><span class="tc-idx" data-ar="الكيان ١ / ٧">ENTITY I / VII</span><h3 data-ar="ثالغور">Thalghor</h3><p data-ar="جسد من دم متصلب بلا وجه — عين حمراء واحدة لا ترمش، وخناجره تخرج من العدم ويحوّل البشر مسوخًا.">A faceless body of hardened blood — one unblinking red eye; his daggers come from nowhere and he twists humans into mutants.</p></div></div>
@@ -1159,7 +1184,7 @@ html[dir="rtl"] #adminFab{left:auto;right:20px}
       <a class="track" href="https://www.youtube.com/watch?v=-fOTUVb9R1Y" target="_blank" rel="noopener"><i>06</i><b>ZERO CHANCE</b><span>OST</span><span class="play">▶</span></a>
       <a class="track" href="https://www.youtube.com/@1Q6" target="_blank" rel="noopener"><i>07</i><b>NO FAITH REMAINS BEFORE THE WAR</b><span>OST</span><span class="play">▶</span></a>
       <a class="track" href="https://www.youtube.com/@1Q6" target="_blank" rel="noopener"><i>08</i><b>THE FALL OF ZAVODIL</b><span data-ar="لحن انتصار آراش">Arash victory theme</span><span class="play">▶</span></a>
-      <a class="track" href="https://www.youtube.com/@1Q6" target="_blank" rel="noopener"><i>09</i><b>THE DISTORTED IDOL</b><span>OST</span><span class="play">▶</span></a>
+      <a class="track" href="https://www.youtube.com/watch?v=K8uYdetCH7I" target="_blank" rel="noopener"><i>09</i><b>THE DISTORTED IDOL</b><span data-ar="الأغنية الرسمية">Official OST</span><span class="play">▶</span></a>
       <a class="track" href="https://www.youtube.com/@1Q6" target="_blank" rel="noopener"><i>10</i><b>DON'T TURN BACK NOW</b><span>OST</span><span class="play">▶</span></a>
       <a class="track" href="https://www.youtube.com/@1Q6" target="_blank" rel="noopener"><i>11</i><b>THE BROKEN ONE</b><span data-ar="دبستيب عربي ميلودي">Melodic Arabic Dubstep</span><span class="play">▶</span></a>
       <a class="track" href="https://www.youtube.com/@1Q6" target="_blank" rel="noopener"><i>12</i><b>أثر · ATHAR</b><span>Official</span><span class="play">▶</span></a>
@@ -1372,7 +1397,13 @@ addEventListener('scroll',()=>{
   document.getElementById('progress').style.width=(max>0?(d.scrollTop/max)*100:0)+'%';
   /* hero parallax */
   const hm=document.querySelector('.hero-main');
-  if(hm&&d.scrollTop<innerHeight){hm.style.transform='translateY('+(d.scrollTop*.18)+'px)';hm.style.opacity=Math.max(0,1-d.scrollTop/(innerHeight*.85))}
+  if(hm){
+    const hr=hm.closest('.hero').getBoundingClientRect();
+    const local=Math.max(0,-hr.top);                     /* px scrolled inside hero */
+    const k=Math.min(1,local/(hr.height*.85));
+    hm.style.transform='translateY('+(local*.18)+'px)';
+    hm.style.opacity=String(Math.max(0,1-k));
+  }
 },{passive:true});
 const io=new IntersectionObserver(es=>es.forEach(en=>{
   if(en.isIntersecting){
@@ -1745,10 +1776,8 @@ document.querySelectorAll('img').forEach(im=>{
   step();
 })();
 function hideLoader(){document.getElementById('loader').classList.add('done');document.body.classList.add('loaded')}
-window.addEventListener('load',()=>{
-  /* let the staged bar reach 100% before reveal */
-  setTimeout(hideLoader,2400);
-});
+window.addEventListener('load',()=>{setTimeout(hideLoader,2400)});
+document.addEventListener('DOMContentLoaded',()=>setTimeout(hideLoader,2600));
 setTimeout(hideLoader,4200);
 </script>
 
@@ -2001,8 +2030,12 @@ if(canvas&&section){
     steps.forEach(st=>st.classList.toggle('on',+st.dataset.step===idx));}
 
   const clock=new THREE.Clock();
-  function tick(){
+  const csec=document.getElementById('crystal');
+let cvis=true;
+new IntersectionObserver(es=>{es.forEach(en=>{cvis=en.isIntersecting})},{threshold:0}).observe(csec);
+function tick(){
     requestAnimationFrame(tick);
+    if(!cvis)return;
     const t=clock.getElapsedTime();
     uni.uTime.value=t;
     grp.rotation.y=t*.1;
@@ -2303,8 +2336,11 @@ function makeExp(canvasId,opts){
   let emberSys=null,es=[];
   const clock=new THREE.Clock();
   let __reported=false;
+  let svis=false;
+  new IntersectionObserver(es=>{es.forEach(en=>{svis=en.isIntersecting;if(svis)lastSwitch=0})},{threshold:0}).observe(canvas.parentElement);
   function tick(){
     requestAnimationFrame(tick);
+    if(!svis)return;
     try{
     viewGate();
     const t=clock.getElapsedTime();
@@ -2412,25 +2448,7 @@ addEventListener('load',()=>{
 </script>
 
 
-<script>
-/* TEMP DEBUG OVERLAY */
-setInterval(()=>{
-  let t='';
-  const wc=document.getElementById('expWhisper'),bc=document.getElementById('expBlood');
-  t+='W:'+ (wc?wc.clientWidth+'x'+wc.clientHeight:'-')+' ';
-  t+='B:'+(bc?bc.clientWidth+'x'+bc.clientHeight:'-')+' ';
-  t+='THREE:'+(window.THREE?window.THREE.REVISION||'yes':'NO')+' ';
-  const chipLen=document.querySelectorAll('.tcard.on').length;
-  t+='cards:'+chipLen;
-  document.querySelectorAll('.isle-exp').forEach(sec=>{
-    let d=sec.querySelector('.dbg');
-    if(!d){d=document.createElement('div');d.className='dbg';
-      d.style.cssText='position:absolute;bottom:8px;inset-inline-start:10px;z-index:99;font:11px monospace;color:#0f0;background:#000a;padding:2px 6px';
-      sec.appendChild(d)}
-    d.textContent=t;
-  });
-},900);
-</script>
+
 
 
 <div class="raven-layer" id="ravenLayer" aria-hidden="true"></div>
@@ -2695,9 +2713,337 @@ window.__ravenMute=v=>{muted=!!v};
 })();
 </script>
 
+<!-- ==================== EPIC BG MUSIC (isolated) ==================== -->
+<audio id="bgmusic" src="distorted_idol.mp3" loop preload="none" aria-hidden="true"></audio>
+<button id="musicToggle" aria-label="toggle music"
+ style="position:fixed;bottom:20px;left:76px;z-index:1400;display:flex;align-items:center;gap:9px;
+ background:#17161b;border:1px solid var(--line2);color:var(--mut);cursor:pointer;
+ padding:10px 16px;border-radius:999px;font-family:'Cinzel',serif;font-size:.78rem;letter-spacing:.14em;
+ transition:.3s;opacity:.75">
+  <span id="mDisc" style="width:18px;height:18px;border-radius:50%;display:inline-block;
+   background:radial-gradient(circle at 50% 50%,#e8c96a 0 3px,#111 3px 8px,#2a2a33 8px);"></span>
+  <span id="mLabel">MUSIC OFF</span>
+</button>
+
 
 <script>
+/* ============ EPIC MUSIC ENGINE (isolated) — BUILD v3.1 ============ */
+(function(){
+'use strict';
+const btn=document.getElementById('musicToggle');
+const audio=document.getElementById('bgmusic');   /* local mp3 */
+audio.volume=0.45;
+let on=false;
+
+function loadFrame(){
+  if(box.querySelector('iframe'))return;
+  const id='K8uYdetCH7I'; /* THE DISTORTED IDOL — official OST */
+  box.innerHTML='<iframe src="https://www.youtube.com/embed/'+id+'?enablejsapi=1&loop=1&playlist='+id+'&version=3" allow="autoplay" style="width:1px;height:1px;border:0"></iframe>';
+}
+function post(fn,args){
+  if(player&&player.contentWindow)player.contentWindow.postMessage(JSON.stringify({event:'command',func:fn,args:args||[]}),'*');
+}
+window.addEventListener('message',e=>{
+  if(e.origin!=='https://www.youtube.com')return;
+  let d={};try{d=JSON.parse(e.data)}catch(x){return}
+  if(d.event==='onYouTubePlayerReady'||d.info&&d.info.playerState!==undefined){/* ready */}
+});
+
+btn.onclick=()=>{
+  const ar=document.documentElement.lang==='ar';
+  if(!on){
+    audio.play().then(()=>{
+      on=true;btn.classList.add('on');
+      document.getElementById('mLabel').innerHTML=(ar?'يعمل: التمثال المشوّه':'NOW: THE DISTORTED IDOL');
+    }).catch(()=>{alert(ar?'تعذر تشغيل الصوت':'Audio failed to load')});
+  }else{
+    audio.pause();
+    on=false;btn.classList.remove('on');
+    document.getElementById('mLabel').textContent=(ar?'الموسيقى متوقفة':'MUSIC OFF');
+  }
+};
+})();
+</script>
 
 
+<script>
+/* ============================================================
+   AOSO 3D HERO CENTERPIECE — real geometry letters A O S O
+   (isolated block: remove this <script> + #c3dHero canvas to uninstall)
+   ============================================================ */
+(function(){
+'use strict';
+if(!window.THREE)return;
+if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+const canvas=document.getElementById('c3dHero');
+const hero=canvas.closest('.logo3d-sec');
+if(!hero)return;
+document.body.classList.add('has3dlogo');
+
+const IS_MOBILE=matchMedia('(max-width:640px)').matches;
+const renderer=new THREE.WebGLRenderer({canvas,antialias:!IS_MOBILE,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,IS_MOBILE?1.5:2));
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(38,1,.1,80);
+camera.position.set(0,.4,11);
+
+/* ---------- letter outlines (custom paths, unit height ~3) ---------- */
+function shapeA(){const s=new THREE.Shape();
+  s.moveTo(-1.05,-1.5);s.lineTo(-.42,-1.5);s.lineTo(0,-.45);s.lineTo(.42,-1.5);s.lineTo(1.05,-1.5);
+  s.lineTo(.28,1.5);s.lineTo(-.28,1.5);s.closePath();
+  const hole=new THREE.Path();hole.moveTo(-.42,-.85);hole.lineTo(0,.35);hole.lineTo(.42,-.85);hole.closePath();
+  s.holes.push(hole);return s}
+function shapeO(){const s=new THREE.Shape();s.absarc(0,0,1.35,0,Math.PI*2,false);
+  const h=new THREE.Path();h.absarc(0,0,.78,0,Math.PI*2,true);s.holes.push(h);return s}
+function shapeS(){const w=1.05,t=.34,s=new THREE.Shape();
+  s.moveTo(w,-1.5);s.lineTo(-w+ .0,-1.5);s.lineTo(-w,-1.5+t);s.lineTo(-w+t*.9? -.62:-.62,-1.16);
+  s.lineTo(.6,-.82);s.lineTo(.6,-.32);s.lineTo(-.95,.12);s.quadraticCurveTo(-1.15,.3,-1.05,.55);
+  s.lineTo(-1.05,1.5-t);s.lineTo(-1.05+t,1.5);s.lineTo(w,1.5);s.lineTo(w,1.5-t);s.lineTo(w-.62,1.16);
+  s.lineTo(-.6,.82);s.lineTo(-.6,.36);s.lineTo(.92,-.08);s.quadraticCurveTo(1.12,-.26,1.02,-.5);
+  s.closePath();return s}
+
+function makeLetter(ch,x){
+  const map={A:shapeA(),O:shapeO(),S:shapeS()};
+  const geo=new THREE.ExtrudeGeometry(map[ch],{
+    depth:.85,size:1,curveSegments:IS_MOBILE?10:18,bevelEnabled:true,
+    bevelThickness:.14,bevelSize:.1,bevelSegments:IS_MOBILE?2:4});
+  geo.center();
+  const mat=new THREE.MeshStandardMaterial({
+    color:0xb9bcc4,metalness:.88,roughness:.24,
+    emissive:0x3c4050,emissiveIntensity:.7,
+    flatShading:false});
+  const mesh=new THREE.Mesh(geo,mat);
+  mesh.position.x=x;
+  /* gold beveled edges */
+  const edges=new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo,18),
+    new THREE.LineBasicMaterial({color:0xe8c96a,transparent:true,opacity:.55}));
+  edges.position.x=x;
+  /* per-letter intro state */
+  mesh.userData={homeX:x,scatter:new THREE.Vector3(R2(-9,9),R2(-5,5),R2(-7,3)),prog:0};
+  mesh.userData.edge=edges;
+  return mesh;
+}
+function R2(a,b){return a+Math.random()*(b-a)}
+
+const logoGroup=new THREE.Group();scene.add(logoGroup);
+const letterEdges=[];
+let spacing=2.75,camZBase=11;
+function fitLogo(){
+  const aspect=(canvas.clientWidth||innerWidth)/(canvas.clientHeight||innerHeight);
+  /* total width of 4 letters ≈ spacing*3 + ~2.1 (half-widths); fit with margin */
+  const needW=spacing*3+2.4;
+  const visW=2*Math.tan(camera.fov*Math.PI/360)*camZBase*aspect;
+  if(visW<needW*1.06){
+    const k=visW/(needW*1.12);
+    spacing*=k;camZBase/=Math.max(.72,k);
+    logoGroup.children.forEach((m,i)=>m.userData.homeX=(i-1.5)*spacing);
+  }
+}
+['A','O','S','O'].forEach((ch,i)=>{
+  const m=makeLetter(ch,(i-1.5)*spacing);
+  logoGroup.add(m);
+  if(m.userData.edge){logoGroup.add(m.userData.edge);letterEdges.push({edge:m.userData.edge,mesh:m})}
+});
+fitLogo();
+addEventListener('resize',()=>{ /* refit on orientation change */
+});
+
+/* ---- fantasy ground: rune platform + orbiting stones ---- */
+const ground=new THREE.Group();scene.add(ground);
+const discMat=new THREE.MeshStandardMaterial({color:0x14161f,metalness:.6,roughness:.5,flatShading:true});
+const disc1=new THREE.Mesh(new THREE.CylinderGeometry(7.5,7.5,.25,48),discMat);
+disc1.position.y=-3.4;ground.add(disc1);
+const disc2=new THREE.Mesh(new THREE.CylinderGeometry(8.6,8.6,.14,48),discMat);
+disc2.position.y=-3.62;ground.add(disc2);
+function runeRing(radius,y,op){
+  const g=new THREE.RingGeometry(radius-.09,radius+.09,96);
+  const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xe8c96a,transparent:true,opacity:op,side:THREE.DoubleSide}));
+  m.rotation.x=-Math.PI/2;m.position.y=y;ground.add(m);return m;
+}
+runeRing(7.5,-3.26,.85);runeRing(8.6,-3.54,.5);
+for(let i=0;i<24;i++){
+  const a=i/24*Math.PI*2;
+  const t=new THREE.Mesh(new THREE.BoxGeometry(.34,.02,.07),
+    new THREE.MeshBasicMaterial({color:0xd9b45a}));
+  t.position.set(Math.cos(a)*7.95,-3.24,Math.sin(a)*7.95);
+  t.rotation.y=-a+Math.PI/2;ground.add(t);
+}
+const stones=[];
+for(let i=0;i<6;i++){
+  const st=new THREE.Mesh(new THREE.DodecahedronGeometry(R2(.16,.3),0),
+    new THREE.MeshStandardMaterial({color:0x39404f,metalness:.7,roughness:.35,flatShading:true,emissive:0x8a6420,emissiveIntensity:.45}));
+  st.userData={r:R2(5.2,7),a:i/6*Math.PI*2,y:R2(-1.5,2.6),sp:R2(.15,.32)*(Math.random()<.5?-1:1)};
+  ground.add(st);stones.push(st);
+}
+
+/* ---------- lights (cursor-driven key) ---------- */
+scene.add(new THREE.AmbientLight(0x556,1.6));
+const hemi=new THREE.HemisphereLight(0xaebfe8,0x141824,1.25);scene.add(hemi);
+const key=new THREE.DirectionalLight(0xf2f4f8,2.9);key.position.set(-6,8,8);scene.add(key);
+const rim=new THREE.DirectionalLight(0xc7cede,2.3);rim.position.set(7,-4,-6);scene.add(rim);
+const cursorLight=new THREE.PointLight(0xe6ecff,60,30);cursorLight.position.set(0,2,7);scene.add(cursorLight);
+
+/* ---------- particles: dust / sparks / fragments ---------- */
+function makeParticles(count,color,size,spread){
+  const g=new THREE.BufferGeometry();
+  const pos=new Float32Array(count*3),vel=[];
+  for(let i=0;i<count;i++){
+    pos[i*3]=R2(-spread,spread);pos[i*3+1]=R2(-spread*.6,spread*.6);pos[i*3+2]=R2(-spread*.5,spread*.5);
+    vel.push({x:R2(-.003,.003),y:R2(-.002,.004),z:R2(-.002,.002)});
+  }
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  const m=new THREE.PointsMaterial({color,size,transparent:true,opacity:.75,depthWrite:false});
+  const pts=new THREE.Points(g,m);
+  pts.userData.vel=vel;pts.userData.home=pos.slice();
+  scene.add(pts);return pts;
+}
+const DUST_N=IS_MOBILE?700:2600,SPARK_N=IS_MOBILE?150:600,FRAG_N=IS_MOBILE?60:220;
+const dust=makeParticles(DUST_N,0x9db8e8,.045,13);
+const sparks=makeParticles(SPARK_N,0xe8c96a,.07,10);
+/* fragments = tiny tetra shards */
+const fragGeo=new THREE.TetrahedronGeometry(.09,0);
+const fragMat=new THREE.MeshStandardMaterial({color:0x2a2f3f,metalness:.9,roughness:.3,flatShading:true,emissive:0x10182a,emissiveIntensity:.6});
+const frags=[];
+for(let i=0;i<FRAG_N;i++){
+  const f=new THREE.Mesh(fragGeo,fragMat);
+  f.position.set(R2(-11,11),R2(-6,6),R2(-5,4));
+  f.rotation.set(R2(0,6),R2(0,6),R2(0,6));
+  f.userData={spin:{x:R2(-.01,.01),y:R2(-.01,.01)},drift:R2(.001,.004)};
+  scene.add(f);frags.push(f);
+}
+
+/* ---------- sizing ---------- */
+function size(){const w=canvas.clientWidth||hero.clientWidth,h=canvas.clientHeight||innerHeight;
+  renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
+new ResizeObserver(size).observe(hero);size();
+
+/* ---------- interaction state ---------- */
+let mx=0,my=0,tmx=0,tmy=0;               /* normalized mouse -1..1 */
+addEventListener('pointermove',e=>{
+  tmx=(e.clientX/innerWidth)*2-1;
+  tmy=-((e.clientY/innerHeight)*2-1);
+},{passive:true});
+
+/* scroll progress across hero */
+let heroProg=0;
+function updProg(){
+  const r=hero.getBoundingClientRect();
+  heroProg=Math.min(1,Math.max(0,-r.top/(r.height||1)));
+}
+addEventListener('scroll',updProg,{passive:true});updProg();
+
+/* ---------- intro: converge + reveal ---------- */
+let bornAt=performance.now()+400;
+let fpsLow=false,fpsCheck=performance.now(),frames=0;
+
+const clock=new THREE.Clock();
+let secVisible=true;
+new IntersectionObserver(es=>{es.forEach(en=>{secVisible=en.isIntersecting})},{threshold:0}).observe(hero);
+function tick(now){
+  requestAnimationFrame(tick);
+  if(!secVisible)return;
+  const t=clock.getElapsedTime();
+  frames++;
+  if(now-fpsCheck>2000){
+    if(frames<40&&!fpsLow){fpsLow=true;dust.geometry.setDrawRange(0,DUST_N/2|0);sparks.geometry.setDrawRange(0,SPARK_N/2|0)}
+    frames=0;fpsCheck=now;
+  }
+
+  /* smooth mouse */
+  mx+=(tmx-mx)*.045;my+=(tmy-my)*.045;
+
+  /* intro progress 0..1 over ~2.6s */
+  const born=Math.min(1,Math.max(0,(now-bornAt)/2600));
+  const ease=1-Math.pow(1-born,3);
+
+  /* letters: scatter→home, then breathing float */
+  let li=0;
+  logoGroup.children.forEach((m,i)=>{
+    if(!m.userData||m.userData.homeX===undefined)return;
+    const i2=li++;                                    /* real letter index */
+    const u=m.userData,u2=ease*(ease*(3-2*ease));
+    m.position.x=u.homeX*(u2)+(u.scatter.x)*(1-u2);
+    m.position.y=(u.scatter.y)*(1-u2)+Math.sin(t*.6+i2*1.4)*.06;
+    m.position.z=(u.scatter.z)*(1-u2)+Math.sin(t*.4+i2)*.04;
+    m.rotation.y=(1-u2)*(i2%2?.9:-.9)+mx*.16;
+    m.rotation.x=(1-u2)*-.6+my*.1+Math.sin(t*.5+i2)*.02;
+    /* scroll scatter: letters drift apart & rotate as heroProg grows */
+    const sp=heroProg;
+    m.position.x+=sp*sp*(i2-1.5)*2.4;
+    m.position.z+=sp*sp*-4.5;
+    m.rotation.y+=sp*sp*((i2%2)?1:-1)*1.4;
+    m.material.opacity=1;   /* opaque metal */
+  });
+
+  /* camera cinematic drift + parallax + scroll push */
+  camera.position.x+=( mx*1.15 - camera.position.x )*.04;
+  camera.position.y+=( .4+my*.7 - camera.position.y )*.04;
+  camera.position.z=camZBase-heroProg*6.0+Math.sin(t*.22)*.25;
+  camera.position.y=.4+my*.7+heroProg*1.2;
+  if(heroProg>.05)camera.lookAt(0,-heroProg*1.1,0);
+  else camera.lookAt(0,0,0);
+
+  /* cursor light follows mouse in world plane */
+  cursorLight.position.x+= (mx*7-cursorLight.position.x)*.06;
+  cursorLight.position.y+= (my*4+.5-cursorLight.position.y)*.06;
+
+  /* particles: drift + mouse repel + converge on intro */
+  [[dust,.9],[sparks,1.5]].forEach(([pts,str])=>{
+    const pos=pts.geometry.attributes.position.array,vel=pts.userData.vel,home=pts.userData.home;
+    for(let i=0;i<pos.length;i+=3){
+      let x=pos[i]+vel[i/3].x,y=pos[i+1]+vel[i/3].y,z=pos[i+2];
+      /* gentle wrap */
+      if(x>14)x=-14;if(x<-14)x=14;if(y>8)y=-8;if(y<-8)y=8;
+      /* intro convergence toward center */
+      if(ease<1){x+=(home[i]*.06)*(1-ease)*8;y+=(home[i+1]*.06)*(1-ease)*8}
+      /* mouse repel in xy plane near z≈0 */
+      const wx=x,wy=y+Math.sin(t*.3+i)*0.02;
+      const mw={x:mx*11,y:my*6.5};
+      const ddx=wx-mw.x,ddy=wy-mw.y,d=Math.hypot(ddx,ddy);
+      if(d<2.4&&d>.0001){const f=(2.4-d)/2.4*str;x+=(ddx/d)*f*.12;y+=(ddy/d)*f*.12}
+      pos[i]=x;pos[i+1]=y;pos[i+2]=z+Math.sin(t*.5+i)*.0015;
+    }
+    pts.geometry.attributes.position.needsUpdate=true;
+  });
+
+  /* fragments spin + drift + mouse sway */
+  frags.forEach(f=>{
+    f.rotation.x+=f.userData.spin.x;f.rotation.y+=f.userData.spin.y;
+    f.position.y+=f.userData.drift;
+    if(f.position.y>7)f.position.y=-7;
+    f.position.x+=Math.sin(t*.2+f.id)*.001;
+  });
+
+  /* fantasy extras */
+  letterEdges.forEach(e=>{
+    e.edge.visible=e.mesh.visible;
+    e.edge.position.copy(e.mesh.position);
+    e.edge.rotation.copy(e.mesh.rotation);
+    const s=e.mesh.scale.x;e.edge.scale.setScalar(s||.001);
+    if(e.edge.material)e.edge.material.opacity=.35+Math.abs(Math.sin(t*1.3))*.35;
+  });
+  stones.forEach(st=>{
+    if(!st.userData||st.userData.sp===undefined)return;
+    st.userData.a+=st.userData.sp*.008;
+    st.position.set(Math.cos(st.userData.a)*st.userData.r,st.userData.y+Math.sin(t*.5+st.userData.a)*.3,Math.sin(st.userData.a)*st.userData.r);
+    st.rotation.y+=.01;st.rotation.x+=.004;
+  });
+  ground.children.forEach((c,idx)=>{
+    if(c.geometry&&c.geometry.type==='RingGeometry'){c.rotation.z+= (idx%2? .0012:-.0009)}
+  });
+  discMat.emissive=discMat.emissive||{r:0,g:0,b:0};
+
+  renderer.render(scene,camera);
+}
+requestAnimationFrame(tick);
+canvas.addEventListener('webglcontextlost',e=>e.preventDefault());
+window.addEventListener('resize',size);
+})();
+</script>
+
+<!-- BUILD v3.1 -->
 </body>
 </html>
