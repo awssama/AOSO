@@ -800,12 +800,17 @@ html.lang-ar .tcard h3{font-family:'Amiri',serif}
  55%{transform:translateX(-3px);filter:none}100%{opacity:1;transform:none}}
 
 
-/* ---------- raven flyby ---------- */
-.raven{position:fixed;left:0;top:0;width:64px;height:40px;pointer-events:none;z-index:1200;
- opacity:0;will-change:transform,opacity;filter:drop-shadow(0 4px 10px rgba(0,0,0,.45))}
-html[dir="rtl"] .raven{left:auto;right:0}
-.raven.flying{opacity:var(--op,.9)}
-@media(max-width:640px){.raven{width:44px;height:28px}}
+/* ---------- raven layer (isolated — delete this block to remove) ---------- */
+.raven-layer{position:fixed;inset:0;pointer-events:none;z-index:1150;overflow:hidden}
+html[dir="rtl"] .raven-layer{inset:0}
+.raven{position:absolute;left:0;top:0;width:72px;height:46px;will-change:transform,opacity;
+ opacity:0;pointer-events:none;filter:drop-shadow(0 6px 12px rgba(0,0,0,.5))}
+.raven.far{width:44px;height:29px;filter:drop-shadow(0 3px 7px rgba(0,0,0,.35)) blur(.4px)}
+.raven.near{width:96px;height:61px}
+.raven.perched{filter:drop-shadow(0 5px 9px rgba(0,0,0,.55)) blur(1.2px)}
+.raven svg{display:block;overflow:visible}
+@media(max-width:640px){.raven{width:52px;height:33px}.raven.near{width:68px;height:43px}.raven.far{width:36px;height:23px}}
+@media(prefers-reduced-motion:reduce){.raven{display:none}}
 
 /* ---------- reveal ---------- */
 .rv{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
@@ -1264,7 +1269,8 @@ html[dir="rtl"] #adminFab{left:auto;right:20px}
 <!-- ==================== ADMIN PANEL ==================== -->
 <div class="apanel" id="apanel" hidden>
   <div class="acard">
-    <h3>⚙️ <span data-ar="لوحة تحكم أوسو">AOSO Control Panel</span> <button class="abtn ghost" id="aClose" style="padding:6px 14px">✕</button></h3>
+    <h3>⚙️ <span data-ar="لوحة تحكم أوسو">AOSO Control Panel</span> <button class="abtn ghost" id="aLock" title="Lock" style="padding:6px 12px">🔒</button>
+    <button class="abtn ghost" id="aClose" style="padding:6px 14px">✕</button></h3>
     <div class="atabs">
       <button class="atab active" data-t="stats" data-ar="الإحصائيات">📊 Stats</button>
       <button class="atab" data-t="news" data-ar="الأخبار والفصول">📰 News</button>
@@ -1482,6 +1488,35 @@ document.querySelectorAll('.copynum').forEach(b=>b.onclick=function(){
 
 /* ---------- ADMIN PANEL ---------- */
 const apanel=document.getElementById('apanel');
+/* ---- admin password gate ---- */
+async function sha256(txt){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('aoso::'+txt));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function adminGate(){
+  if(sessionStorage.getItem('aosoAdmin')==='1'){openAdmin();return}
+  const ar=document.documentElement.lang==='ar';
+  const saved=localStorage.getItem('aosoAdminHash');
+  if(!saved){
+    /* first time: create password */
+    const p1=prompt(ar?'🔒 أنشئ كلمة مرور للوحة التحكم (مرة واحدة فقط):':'🔒 Create a control-panel password (one time):');
+    if(!p1)return;
+    const p2=prompt(ar?'أعد كتابة كلمة المرور للتأكيد:':'Confirm the password:');
+    if(p2!==p1){alert(ar?'⚠ الكلمتان غير متطابقتين':'⚠ Passwords do not match');return}
+    if(p1.length<4){alert(ar?'⚠ 4 أحرف على الأقل':'⚠ At least 4 characters');return}
+    sha256(p1).then(h=>{localStorage.setItem('aosoAdminHash',h);
+      sessionStorage.setItem('aosoAdmin','1');
+      alert(ar?'✓ تم تفعيل كلمة المرور':'✓ Password set');
+      openAdmin();});
+    return;
+  }
+  const p=prompt(ar?'🔒 كلمة مرور لوحة التحكم:':'🔒 Control-panel password:');
+  if(p===null)return;
+  sha256(p).then(h=>{
+    if(h===saved){sessionStorage.setItem('aosoAdmin','1');openAdmin()}
+    else{alert(ar?'❌ كلمة مرور خاطئة':'❌ Wrong password')}
+  });
+}
 function openAdmin(){
   document.getElementById('f_reads').value=SITE.reads;
   document.getElementById('f_rating').value=SITE.rating;
@@ -1502,10 +1537,12 @@ function renderNewsMgr(){
     row.appendChild(del);box.appendChild(row);
   });
 }
-document.getElementById('adminFab').onclick=openAdmin;
+document.getElementById('adminFab').onclick=adminGate;
 document.getElementById('aClose').onclick=()=>apanel.hidden=true;
+document.getElementById('aLock').onclick=()=>{sessionStorage.removeItem('aosoAdmin');apanel.hidden=true;
+  alert(document.documentElement.lang==='ar'?'🔒 تم قفل اللوحة':'🔒 Panel locked');};
 apanel.addEventListener('click',e=>{if(e.target===apanel)apanel.hidden=true});
-document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.shiftKey&&(e.key==='A'||e.key==='a')){e.preventDefault();openAdmin()}});
+document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.shiftKey&&(e.key==='A'||e.key==='a')){e.preventDefault();adminGate()}});
 document.querySelectorAll('.atab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.atab').forEach(x=>x.classList.remove('active'));t.classList.add('active');
   document.querySelectorAll('.apane').forEach(p=>p.classList.remove('active'));
@@ -2396,108 +2433,271 @@ setInterval(()=>{
 </script>
 
 
-<div class="raven" id="raven" aria-hidden="true">
- <svg viewBox="0 0 120 74" xmlns="http://www.w3.org/2000/svg">
-  <!-- body -->
-  <path fill="#0d0d12" d="M60 34 C52 30 42 31 36 36 C30 41 26 48 20 51 C30 53 40 50 47 46 C43 55 38 62 30 66 C42 64 52 56 58 46 L62 40 Z"/>
-  <!-- head+beak -->
-  <path fill="#0d0d12" d="M62 32 C68 27 76 27 81 31 L98 33 L80 37 C75 40 67 39 63 36 Z"/>
-  <circle cx="72" cy="32.4" r="1.5" fill="#e8c96a" opacity=".85"/>
-  <!-- tail -->
-  <path fill="#0d0d12" d="M22 49 C14 47 7 48 2 52 C10 54 17 54 23 52 Z"/>
-  <!-- wings (animated groups) -->
-  <g id="rvWingL">
-    <path fill="#131320" d="M58 33 C48 18 30 8 8 6 C24 16 38 28 50 38 Z"/>
-  </g>
-  <g id="rvWingR">
-    <path fill="#181828" d="M62 33 C70 16 86 5 108 4 C94 15 78 27 66 38 Z"/>
-  </g>
- </svg>
-</div>
+<div class="raven-layer" id="ravenLayer" aria-hidden="true"></div>
+<script id="ravenTemplate" type="text/template">
+<svg viewBox="0 0 120 74" xmlns="http://www.w3.org/2000/svg">
+ <defs>
+  <linearGradient id="rvBody" x1="0" y1="0" x2="0" y2="1">
+   <stop offset="0" stop-color="#1b1b28"/><stop offset=".55" stop-color="#101018"/><stop offset="1" stop-color="#07070c"/>
+  </linearGradient>
+  <linearGradient id="rvWingA" x1="0" y1="0" x2="1" y2="1">
+   <stop offset="0" stop-color="#20202f"/><stop offset="1" stop-color="#0a0a12"/>
+  </linearGradient>
+ </defs>
+ <!-- tail feathers -->
+ <path fill="#0a0a10" d="M24 48 C15 45 6 46 0 51 C9 54 18 53 25 51 Z"/>
+ <path fill="#12121c" d="M26 50 C19 49 11 51 5 56 C13 57 21 55 27 52 Z"/>
+ <!-- body -->
+ <path fill="url(#rvBody)" d="M58 32 C50 28 40 30 34 36 C29 41 26 47 19 50 C29 53 39 50 47 45 C44 54 38 62 30 67 C42 64 52 55 59 45 L63 39 Z"/>
+ <!-- feather hints on body -->
+ <path fill="#000" opacity=".25" d="M40 42 C44 46 49 49 55 50 M36 37 C41 42 47 46 54 48" stroke="#000" stroke-width=".8" fill="none" opacity=".3"/>
+ <!-- head + beak -->
+ <path fill="url(#rvBody)" d="M60 31 C66 26 75 26 80 30 L99 32 L79 37 C74 40 65 39 61 35 Z"/>
+ <path fill="#0a0a10" d="M92 31.4 L99 32 L91.5 33.6 Z"/>
+ <circle cx="71.5" cy="31.6" r="1.6" fill="#e8c96a" opacity=".9"/>
+ <circle cx="71.5" cy="31.6" r=".6" fill="#0a0a10"/>
+ <!-- far wing (behind body, slower) -->
+ <g class="rv-wing rv-far"><path fill="#151522" opacity=".92" d="M60 31 C66 14 82 3 106 1 C90 13 74 26 63 37 Z"/></g>
+ <!-- near wing (in front, faster) -->
+ <g class="rv-wing rv-near"><path fill="url(#rvWingA)" d="M57 32 C46 16 27 6 4 5 C21 16 37 29 50 39 Z"/></g>
+</svg>
+</script>
+
 
 
 <script>
-/* ============ RAVEN FLYBY ENGINE ============ */
+/* ================================================================
+   AOSO LIVING RAVEN — isolated system (delete this <script> + the
+   .raven-layer div + .raven CSS block to remove the feature).
+   Behaviors: random curved flybys, mouse avoidance, scroll drift,
+   rare perch, rare shy far-flyby, rare twin ravens, section mood,
+   optional faint croak after user interaction (mute flag).
+   ================================================================ */
 (function(){
-  const el=document.getElementById('raven');
-  if(!el)return;
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-  const wl=document.getElementById('rvWingL'),wr=document.getElementById('rvWingR');
-  const reduced=Math.random;
-  let flying=false;
+'use strict';
+if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
 
-  function flap(speed){
-    /* wing flap synced to speed: fast when diving/fast */
-    const dur=Math.max(180,520-speed*90);
-    [wl,wr].forEach((w,i)=>{
-      w.style.transformOrigin=i?'62px 33px':'58px 33px';
-      w.animate([
-        {transform:'rotate(0deg)'},
-        {transform:'rotate('+(i?-52:52)+'deg)'},
-        {transform:'rotate(0deg)'}
-      ],{duration:dur,iterations:Infinity,easing:'ease-in-out',direction:i? 'normal':'normal'});
-    });
-    return dur;
+const layer=document.getElementById('ravenLayer');
+if(!layer)return;
+const tpl=document.getElementById('ravenTemplate');
+const IS_MOBILE=matchMedia('(max-width:640px)').matches;
+const R=(a,b)=>a+Math.random()*(b-a);
+const RI=(a,b)=>Math.floor(R(a,b+1));
+let muted=true;                       /* sound stays off until first interaction */
+let interacted=false;
+addEventListener('pointerdown',()=>{interacted=true},{once:true});
+addEventListener('keydown',()=>{interacted=true},{once:true});
+
+/* ---- faint croak (WebAudio, no assets) — very quiet, rare ---- */
+function croak(){
+  if(muted||!interacted)return;
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator(),g=ctx.createGain(),f=ctx.createBiquadFilter();
+    o.type='sawtooth';o.frequency.setValueAtTime(210,ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(95,ctx.currentTime+.18);
+    f.type='lowpass';f.frequency.value=900;
+    g.gain.setValueAtTime(.015,ctx.currentTime);           /* very quiet */
+    g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+.22);
+    o.connect(f).connect(g).connect(ctx.destination);
+    o.start();o.stop(ctx.currentTime+.24);
+    setTimeout(()=>ctx.close(),400);
+  }catch(e){}
+}
+
+/* ---- section mood detection ---- */
+function mood(){
+  const secs=[
+    {el:'#blood',      m:'tense'},
+    {el:'#whisper',    m:'mist'},
+    {el:'#season2',    m:'dark'},
+    {el:'#fund',       m:'calm'},
+    {el:'#crystal',    m:'calm'}
+  ];
+  for(const s of secs){
+    const el=document.querySelector(s.el);
+    if(!el)continue;
+    const r=el.getBoundingClientRect();
+    if(r.top<innerHeight*.6&&r.bottom>innerHeight*.4)return s.m;
   }
-  function stopFlap(){[wl,wr].forEach(w=>{try{w.getAnimations().forEach(a=>a.cancel())}catch(e){}})}
+  return 'calm';
+}
 
-  function fly(){
-    if(flying)return;flying=true;
+/* ---- raven factory (supports the rare twin event) ---- */
+function makeRaven(){
+  const el=document.createElement('div');
+  el.className='raven';
+  el.innerHTML=tpl.innerHTML;
+  layer.appendChild(el);
+  return el;
+}
+function wings(el){
+  return {
+    near: el.querySelector('.rv-near'),
+    far:  el.querySelector('.rv-far')
+  };
+}
+function startFlap(el,speed){
+  const w=wings(el);
+  const dur=Math.max(170,540-speed*110);
+  [w.far,w.near].forEach((g,i)=>{
+    if(!g)return;
+    g.style.transformOrigin=i?'62px 32px':'58px 32px';
+    g.animate([
+      {transform:'rotate(0deg)'},
+      {transform:'rotate('+(i?-55:55)+'deg) translateY(-2px)'},
+      {transform:'rotate(0deg)'}
+    ],{duration:dur,iterations:Infinity,easing:'ease-in-out'});
+  });
+}
+function stopFlap(el){el.querySelectorAll('.rv-wing').forEach(g=>{
+  try{g.getAnimations().forEach(a=>a.cancel())}catch(e){}});}
+
+/* head twitch while perched */
+function headTwitch(el){
+  const svg=el.querySelector('svg');
+  let n=0;
+  const iv=setInterval(()=>{
+    n++;svg.style.transform='rotate('+R(-3,3)+'deg) translateX('+R(-1.2,1.2)+'px)';
+    if(n>5){clearInterval(iv);svg.style.transform=''}
+  },380);
+}
+
+/* ================= flight core ================= */
+let busy=false,mouse={x:-9999,y:-9999,vx:0,vy:0,lastX:0,lastT:0};
+addEventListener('pointermove',e=>{
+  const t=performance.now();
+  mouse.vx=e.clientX-mouse.lastX;mouse.vy=t-mouse.lastT;
+  mouse.x=e.clientX;mouse.y=e.clientY;mouse.lastX=e.clientX;mouse.lastT=t;
+},{passive:true});
+addEventListener('pointerleave',()=>{mouse.x=-9999;mouse.y=-9999},{passive:true});
+
+function spawn(forced){
+  if(busy)return;busy=true;
+  const count=(forced==='twin'||Math.random()<0.06)&&!IS_MOBILE?2:1;   /* rare twin ~6% */
+  for(let k=0;k<count;k++)flyOne(k===0?'':'far-'+k,R(0,300));
+  /* busy releases when the FIRST raven finishes */
+}
+function flyOne(id,delay){
+  setTimeout(()=>{
+    const el=makeRaven();
     const W=innerWidth,H=innerHeight;
-    /* random entry edge & exit edge (never same side) */
+    const md=mood();
+
+    /* depth class */
+    const depthRoll=Math.random();
+    let depth='mid';
+    if(depthRoll<.25){depth='far'}else if(depthRoll>.8&&depth!=='far'){depth='near'}
+    if(depth==='near'&&md==='tense')depth='mid';        /* tense mood: less close-up */
+    el.classList.add(depth);
+
+    /* edges */
     const edges=['L','R','T','B'];
-    const from=edges[Math.floor(Math.random()*4)];
-    let to;do{to=edges[Math.floor(Math.random()*4)]}while(to===from);
-    const P=e=>{
-      switch(e){
-        case 'L':return{x:-90,y:H*(0.15+Math.random()*0.6)};
-        case 'R':return{x:W+90,y:H*(0.15+Math.random()*0.6)};
-        case 'T':return{x:W*Math.random(),y:-90};
-        default:return{x:W*Math.random(),y:H+90};
-      }};
+    const from=edges[RI(0,3)];
+    let to;do{to=edges[RI(0,3)]}while(to===from);
+    const P=e=>({L:{x:-100,y:H*R(.12,.68)},R:{x:W+100,y:H*R(.12,.68)},
+                 T:{x:W*R(.05,.95),y:-100},B:{x:W*R(.05,.95),y:H+100}}[e]);
     const A=P(from),B=P(to);
 
-    /* scale = fake depth */
-    const sc=(0.55+Math.random()*0.75).toFixed(2);
-    el.style.setProperty('--op',(0.65+Math.random()*0.35).toFixed(2));
+    /* shy variant: sometimes vanishes before mid-screen */
+    const shy=Math.random()<.12;
+    if(shy){
+      B.x=A.x+(B.x-A.x)*R(.3,.45);
+      B.y=A.y+(B.y-A.y)*R(.3,.45);
+    }
 
-    /* control point for curved path (perpendicular offset) */
-    const mx=(A.x+B.x)/2, my=(A.y+B.y)/2;
-    const dx=B.x-A.x, dy=B.y-A.y, len=Math.hypot(dx,dy)||1;
-    const bend=(Math.random()*0.5+0.25)*(Math.random()<.5?-1:1)*len*0.25;
-    const C={x:mx+(-dy/len)*bend, y:my+(dx/len)*bend};
+    /* curved path */
+    const mx=(A.x+B.x)/2,my=(A.y+B.y)/2;
+    const dx=B.x-A.x,dy=B.y-A.y,len=Math.hypot(dx,dy)||1;
+    const bend=R(.2,.55)*(Math.random()<.5?-1:1)*len*.3;
+    const C={x:mx+(-dy/len)*bend,y:my+(dx/len)*bend};
 
-    /* face travel direction */
-    const ang=Math.atan2(B.y-C.y,B.x-C.x)*180/Math.PI;
-    const flip=dx<0;
+    /* speed by mood + depth */
+    let base=md==='tense'?R(.55,.85):md==='mist'?R(.28,.42):R(.38,.62);
+    if(depth==='far')base*=.7;
+    if(IS_MOBILE)base*=.85;
+    const dur=len/base;
 
-    const dur=len/(0.35+Math.random()*0.45);   /* px per ms → 0.35–0.8 */
-    el.classList.add('flying');
+    const sc=depth==='near'?R(1.05,1.25):depth==='far'?R(.5,.65):R(.75,1);
+    el.style.setProperty('--op',(depth==='far'?R(.45,.6):R(.75,.92)).toFixed(2));
 
-    /* wing flap rate follows speed */
-    flap(Math.abs(dur)<900?2:1);
+    /* motion blur hint at high speed */
+    if(base>.7)el.style.filter+=' blur(.3px)';
 
-    /* animate via Web Animations on transform only (GPU) */
-    const anim=el.animate([
-      {transform:`translate(${A.x}px,${A.y}px) translate(-50%,-50%) rotate(${flip?ang+180:ang}deg) scale(${sc})`,offset:0},
-      {transform:`translate(${C.x}px,${C.y}px) translate(-50%,-50%) rotate(${flip?ang+170:ang-6}deg) scale(${sc*1.04})`,offset:.5},
-      {transform:`translate(${B.x}px,${B.y}px) translate(-50%,-50%) rotate(${flip?ang+180:ang}deg) scale(${sc*.96})`,offset:1}
-    ],{duration:dur,easing:'linear',fill:'both'});
+    startFlap(el,base);
 
-    anim.onfinish=()=>{stopFlap();el.classList.remove('flying');flying=false;sched()};
-    /* safety timeout in case of tab-throttle */
-    setTimeout(()=>{if(flying&&anim.playState!=='finished'){anim.finish()}},dur+4000);
-  }
+    /* occasional croak on spawn (only after user has interacted) */
+    if(interacted&&Math.random()<.18)setTimeout(croak,R(200,900));
 
-  function sched(){
-    const delay=9000+Math.random()*22000;   /* every 9–31 s */
-    setTimeout(()=>{fly()},delay);
-  }
+    /* robust per-frame runner */
+    const Q=(p0,p1,p2,t)=>({x:(1-t)*(1-t)*p0.x+2*(1-t)*t*p1.x+t*t*p2.x,
+                            y:(1-t)*(1-t)*p0.y+2*(1-t)*t*p1.y+t*t*p2.y});
+    let t0=performance.now(),avoid=0,perched=false,pausedAt=0,done=false;
+    requestAnimationFrame(function loop(now){
+      let u=(now-t0)/dur;
+      if(shy&&u>=.5){cleanup();return}
+      if(u>=1){cleanup();return}
+      const wob=1+Math.sin(now*.002+u*9)*.10;
+      const tt=Math.min(1,u*wob);
+      const p=Q(A,C,B,tt),p2=Q(A,C,B,Math.min(1,tt+.02));
+      let ang=Math.atan2(p2.y-p.y,p2.x-p.x)*180/Math.PI;
+      const flip=p2.x-p.x<0;
+      const ddx=p.x-mouse.x,ddy=p.y-mouse.y,dist=Math.hypot(ddx,ddy)||1;
+      let ax=0,ay=0;
+      if(dist<(IS_MOBILE?80:120)){
+        const fast=(mouse.vx*mouse.vx+mouse.vy*mouse.vy)>2500;
+        avoid=Math.min(1.4,avoid+(fast?.4:.14));
+        const push=(fast?60:26)*avoid;
+        ax=(ddx/dist)*push;ay=(ddy/dist)*push;
+        ang+=(ddx>0?-16:16)*Math.min(1,avoid);
+      }else avoid=Math.max(0,avoid-.04);
 
-  /* first appearance after 4–10 s */
-  setTimeout(fly,4000+Math.random()*6000);
+      /* perch event */
+      if(!perched&&!shy&&tt>.44&&tt<.52&&Math.random()<.007){
+        perched=true;pausedAt=now;stopFlap(el);el.classList.add('perched');headTwitch(el);
+      }
+      if(perched&&now-pausedAt>2400){perched=false;el.classList.remove('perched');startFlap(el,base)}
+
+      const drift=Math.sin(u*6.28)*scrollY*.012;
+      const sc=parseFloat(el.dataset.scl||(el.dataset.scl=(depth==='near'?R(1.05,1.25):depth==='far'?R(.5,.65):R(.78,1)).toFixed(2)));
+      const op=el.style.getPropertyValue('--op')||'.85';
+      const px=p.x+ax,py=p.y+ay+(perched?0:drift);
+      const rot=flip?ang+180:ang;
+      const blur=base>.72&&!perched?' blur(.35px)':(perched?' blur(1px)':'');
+      el.style.opacity=op;
+      el.style.filter=`drop-shadow(0 ${depth==='near'?6:4}px ${depth==='near'?12:8}px rgba(0,0,0,.5))${blur}`;
+      el.style.transform=`translate3d(${px}px,${py}px,0) translate(-50%,-50%) rotate(${perched?(flip?ang+180:ang)-8:rot}deg) scale(${sc})`;
+
+      requestAnimationFrame(loop);
+      function cleanup(){done=true;stopFlap(el);el.style.opacity='0';setTimeout(()=>el.remove(),500)}
+    });
+
+    /* release global busy shortly after main bird likely exits */
+    setTimeout(()=>{busy=false},dur+800);
+  },delay);
+}
+
+/* scheduler */
+function schedule(){
+  const gap=RI(20000,45000)/(IS_MOBILE?1.4:1);
+  setTimeout(()=>{
+    const roll=Math.random();
+    if(roll<.08)spawn('twin');
+    else spawn();
+    schedule();
+  },gap);
+}
+setTimeout(()=>spawn(),RI(5000,12000));
+schedule();
+
+/* expose mute toggle for future settings hook (no UI added) */
+window.__ravenMute=v=>{muted=!!v};
 })();
 </script>
+
+
+<script>
+
 
 </body>
 </html>
