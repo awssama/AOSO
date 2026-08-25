@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>window.IS_MOBILE=matchMedia('(max-width:640px)').matches;window.__QUAL=1;</script>
 <title>AOSO — Amid the Ashes · Official Site</title>
 <meta name="description" content="The official home of AOSO, the dark-fantasy saga by Aws Alrammahi. Two seasons, an anime fund, original soundtrack, and print editions.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -901,6 +902,22 @@ html[dir="rtl"] #adminFab{left:auto;right:20px}
   .nav-links.open{display:flex}
   .nav-cta{width:fit-content}
 }
+
+/* ===== MOBILE OPTIMIZATIONS ===== */
+@media (max-width:640px){
+  #musicToggle{padding:14px 18px;font-size:13px}
+  #adminFab{width:54px;height:54px;font-size:22px}
+  #topBtn{width:52px;height:52px}
+  .hero-main{will-change:auto}
+  /* lighter text shadows on mobile GPUs */
+  #heroTitle span{text-shadow:none}
+  /* raven smaller & calmer */
+  #ravenLayer svg{filter:drop-shadow(0 0 2px rgba(0,0,0,.5))}
+}
+@supports (padding:max(0px)) {
+  #musicToggle,#topBtn{margin-bottom:env(safe-area-inset-bottom,0px)}
+}
+
 </style>
 
 </head>
@@ -1904,8 +1921,8 @@ setTimeout(()=>{
 const canvas=document.getElementById('iceCanvas');
 const section=document.getElementById('crystal');
 if(canvas&&section){
-  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
-  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:!IS_MOBILE,alpha:false});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,IS_MOBILE?1.5:2)*window.__QUAL);
   const scene=new THREE.Scene();
   scene.background=new THREE.Color(0x07060e);
   const camera=new THREE.PerspectiveCamera(50,1,.1,100);
@@ -2257,8 +2274,8 @@ function makeExp(canvasId,opts){
   const canvas=document.getElementById(canvasId);
   const section=canvas.closest('section');
   __step('creating renderer');
-  const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
-  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:!IS_MOBILE});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,IS_MOBILE?1.5:2)*window.__QUAL);
   renderer.toneMapping=THREE.ACESFilmicToneMapping;
   const scene=new THREE.Scene();
   scene.background=new THREE.Color(opts.bg);
@@ -2498,7 +2515,7 @@ if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
 const layer=document.getElementById('ravenLayer');
 if(!layer)return;
 const tpl=document.getElementById('ravenTemplate');
-const IS_MOBILE=matchMedia('(max-width:640px)').matches;
+window.IS_MOBILE=matchMedia('(max-width:640px)').matches;const IS_MOBILE=window.IS_MOBILE;
 const R=(a,b)=>a+Math.random()*(b-a);
 const RI=(a,b)=>Math.floor(R(a,b+1));
 let muted=true;                       /* sound stays off until first interaction */
@@ -2780,9 +2797,9 @@ const hero=canvas.closest('.logo3d-sec');
 if(!hero)return;
 document.body.classList.add('has3dlogo');
 
-const IS_MOBILE=matchMedia('(max-width:640px)').matches;
+window.IS_MOBILE=matchMedia('(max-width:640px)').matches;const IS_MOBILE=window.IS_MOBILE;
 const renderer=new THREE.WebGLRenderer({canvas,antialias:!IS_MOBILE,alpha:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio,IS_MOBILE?1.5:2));
+renderer.setPixelRatio(Math.min(devicePixelRatio,IS_MOBILE?1.5:2)*window.__QUAL);
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
 
 const scene=new THREE.Scene();
@@ -2800,25 +2817,13 @@ function shapeO(){
   const s=new THREE.Shape();s.absarc(0,0,1.32,0,Math.PI*2,false);
   const h=new THREE.Path();h.absarc(0,0,.72,0,Math.PI*2,true);s.holes.push(h);return s}
 function shapeS(){
-  const w=1.0,t=.46;
-  const yTop=1.5, yBot=-1.5;
-  const mT=.30, mB=mT-t;              /* middle bar */
-  const lT=yTop-t;                    /* top bar bottom edge */
-  const bT=yBot+t;                    /* bottom bar top edge */
+  /* One C-shaped half (opens right). Used twice: normal + rotated 180°. */
+  const R=.95,r=.42,cy=.78;
   const s=new THREE.Shape();
-  /* clockwise outline of the blocky S */
-  s.moveTo( w,       yTop);
-  s.lineTo(-w,       yTop);
-  s.lineTo(-w,       mT);
-  s.lineTo( w-t*.55, mT);
-  s.lineTo( w-t*.55, bT);
-  s.lineTo(-w,       bT);
-  s.lineTo(-w,       yBot);
-  s.lineTo( w,       yBot);
-  s.lineTo( w,       bT);
-  s.lineTo(-w+t,     bT);
-  s.lineTo(-w+t,     lT);
-  s.lineTo( w,       lT);
+  s.moveTo(0, cy+R);                                  /* outer top-center */
+  s.absarc(0,cy,R, Math.PI*0.50, Math.PI*1.50,false); /* CCW over top→bottom */
+  s.lineTo(0, cy+r);                                  /* to inner bottom-center */
+  s.absarc(0,cy,r, Math.PI*1.50, Math.PI*0.50,true);  /* back along inner edge */
   s.closePath();
   return s}
 function coreMat(){
@@ -2831,6 +2836,32 @@ function faceMat(){
     emissive:0x3c4050,emissiveIntensity:.35,flatShading:false})}
 function makeLetter(ch,x){
   const map={A:shapeA(),O:shapeO(),S:shapeS()};
+  if(ch==='S'){
+    /* S = top C + bottom C rotated 180°, fused at waist */
+    const grp=new THREE.Group();
+    const geoTop=new THREE.ExtrudeGeometry(map.S,{depth:.85,size:1,curveSegments:IS_MOBILE?12:24,
+      bevelEnabled:true,bevelThickness:.14,bevelSize:.11,bevelSegments:IS_MOBILE?2:4});
+    const geoBot=geoTop.clone();
+    geoTop.center();
+    const matCore=coreMat();
+    const top=new THREE.Mesh(geoTop,matCore);
+    top.position.y=.40;
+    grp.add(top);
+    geoBot.center();
+    const bot=new THREE.Mesh(geoBot,matCore);
+    bot.rotation.z=Math.PI;
+    bot.position.y=-.42;
+    grp.add(bot);
+    /* gold rims on both halves */
+    [top,bot].forEach(m=>{
+      const e=new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry,16),
+        new THREE.LineBasicMaterial({color:0xe8c96a,transparent:true,opacity:.6}));
+      m.add(e);
+    });
+    grp.position.x=x;
+    grp.userData={homeX:x,scatter:new THREE.Vector3(R2(-9,9),R2(-5,5),R2(-7,3)),prog:0};
+    return grp;
+  }
   /* dark obsidian core with deep bevel */
   const geoCore=new THREE.ExtrudeGeometry(map[ch],{
     depth:.85,size:1,curveSegments:IS_MOBILE?10:20,bevelEnabled:true,
@@ -2883,6 +2914,7 @@ const builtLetters=[];
 fitLogo();
 addEventListener('resize',()=>{ /* refit on orientation change */
 });
+addEventListener('quality-drop',()=>size());
 
 /* ---- fantasy ground: rune platform + orbiting stones ---- */
 const ground=new THREE.Group();scene.add(ground);
@@ -3008,7 +3040,7 @@ function tick(now){
     m.position.x+=sp*sp*(i2-1.5)*2.4;
     m.position.z+=sp*sp*-4.5;
     m.rotation.y+=sp*sp*((i2%2)?1:-1)*1.4;
-    m.material.opacity=1;   /* opaque metal */
+    if(m.material)m.material.opacity=1;   /* opaque metal */
   });
 
   /* camera cinematic drift + parallax + scroll push */
@@ -3076,5 +3108,26 @@ window.addEventListener('resize',size);
 </script>
 
 <!-- BUILD v3.1 -->
+<script>
+/* ===== ADAPTIVE QUALITY GOVERNOR (shared) ===== */
+window.__QUAL=1;
+(function(){
+  let frames=0,last=performance.now(),bad=0;
+  function loop(now){
+    requestAnimationFrame(loop);
+    frames++;
+    if(now-last>=1000){
+      const fps=frames*1000/(now-last);frames=0;last=now;
+      if(fps<26){bad++}else{bad=Math.max(0,bad-1)}
+      if(bad>=3&&window.__QUAL>0.55){
+        window.__QUAL*=0.75;
+        window.dispatchEvent(new Event('quality-drop'));
+        bad=0;
+      }
+    }
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
 </body>
 </html>
