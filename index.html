@@ -568,9 +568,9 @@ html.lang-ar .stat span{font:600 .86rem/1.5 var(--f-ar-ui);letter-spacing:0}
 .story-copy{grid-column:1/span 6;display:grid;gap:26px}
 .story-copy p{color:#c6bfb3;font-size:1.06rem;line-height:1.85}
 .story-copy p:first-child{font:400 clamp(1.3rem,1.8vw,1.55rem)/1.62 var(--f-disp);color:var(--paper)}
-.story-copy p:first-child::first-letter{font:600 4.3em/.8 var(--f-disp);float:inline-start;padding-inline-end:14px;padding-top:.08em;color:var(--gold)}
+/* no drop cap: the paragraph opens with the name AOSO, and a split initial read as "A · OSO" */
 html.lang-ar .story-copy p:first-child{font:400 1.35rem/1.95 var(--f-ar)}
-html.lang-ar .story-copy p:first-child::first-letter{font:inherit;float:none;padding:0;color:inherit}
+
 .tags{display:flex;flex-wrap:wrap;gap:10px 0;margin-top:14px;font:600 .6rem/1.4 var(--f-caps);letter-spacing:.3em;text-transform:uppercase;color:var(--faint)}
 .tags li{display:inline-flex;align-items:center}
 .tags li::before{content:"";width:3px;height:3px;border-radius:50%;background:var(--gold-dim);margin-inline:16px}
@@ -5956,7 +5956,11 @@ function pose(t,tt){
   U.pl.value.set(_pl.normal.x,_pl.normal.y,_pl.normal.z,_pl.constant);
 
   /* camera: slow drift, parallax, and a push toward the word on scroll */
-  const Dz=D*(1-.74*qp)+Math.sin(t*.21)*.012*D*motion;
+  /* keep the whole word in frame while it parts: an "A" pushed off-screen read as "OSO" */
+  let ext=0;for(let i=0;i<letters.length;i++){const lx=Math.abs(letters[i].position.x);if(lx>ext)ext=lx;}
+  ext+=wordW*.15;
+  const tnF=Math.tan(camera.fov*Math.PI/360),dMin=ext/(.9*tnF*Math.max(.3,camera.aspect));
+  const Dz=Math.max(dMin,D*(1-.74*qp))+Math.sin(t*.21)*.012*D*motion;
   camera.position.set(mx*.035*D*motion,camY*(1-.4*q)+my*.02*D*motion,Dz);
   camera.lookAt(0,lookY*(1-q)+.1*q,0);
   camera.updateMatrixWorld();
@@ -6572,7 +6576,7 @@ function basis(fwd,upv){const f=nrm(fwd),r=nrm(crs(f,upv)),u=crs(r,f);return {f,
 const SW={x:0,z:.245};                                    /* sword axis (planted, vertical) */
 const GRIP_Y=1.0,POM_Y=1.102,POM_R=.031;
 const HEADP=[0,1.636,-.02];                               /* head pivot = top of the neck */
-const S_R=[-.188,1.476,-.012],S_L=[.188,1.476,-.012];
+const S_R=[-.205,1.478,-.014],S_L=[.205,1.478,-.014];
 const UA=.29,FA=.27;
 /* right fist around the grip: the forearm points forward-left, thumb on top */
 const Dr=nrm([.8,0,.6]),Nr=crs([0,1,0],Dr);           /* Nr: palm side */
@@ -6603,29 +6607,41 @@ const HD={
   cran:P.ell([0,.132,-.02],[.072,.094,.097]),
   fore:P.ell([0,.146,.028],[.064,.072,.062]),
   occ:P.ell([0,.105,-.056],[.064,.074,.058]),
-  eyes:[[.0305,.1205,.0885],[-.0305,.1205,.0885]]
+  eyes:[[.0305,.1198,.0782],[-.0305,.1198,.0782]]   /* eyeball centres */
 };
+/* the almond eye opening: a lens, tilted up at the outer corner, its upper lid cut
+   level and pulled down toward the nose (anger); an open prism in front of the eyeball */
+const EYEB={r:.0118,a:.0128,hh:.0056,tilt:.15,cut:[.0036,.12]};
+function almond(s,x,y){
+  const e=HD.eyes[s>0?0:1],dx=x-e[0],dy=y-e[1],c=Math.cos(EYEB.tilt),sn=Math.sin(EYEB.tilt);
+  const u=s*dx*c+dy*sn,v=-s*dx*sn+dy*c;
+  const hh=EYEB.hh,a=EYEB.a,rr=(a*a/hh+hh)/2,d=rr-hh;
+  const px=ab(v),py=ab(u),b=a;
+  const ves=((py-b)*d>px*b)?Math.hypot(px,py-b):Math.hypot(px+d,py)-rr;
+  return MX(ves,v-(EYEB.cut[0]+EYEB.cut[1]*u));
+}
 function headSDF(){
   const L=[],U=(p,k)=>L.push(['u',p,k||0]),S=(p,k)=>L.push(['s',p,k||0]),pr=f=>{f(1);f(-1);};
   U(HD.cran);U(HD.fore,.03);U(HD.occ,.03);
-  U(P.ell([0,.09,.03],[.053,.064,.06]),.03);                                /* face mass */
-  pr(s=>U(P.ell([s*.043,.082,.045],[.022,.03,.026]),.026));                 /* smooth young cheeks */
-  pr(s=>U(P.ell([s*.047,.101,.055],[.019,.011,.019],[0,0,s*.25]),.02));     /* high cheekbones */
-  pr(s=>U(P.chain([[s*.056,.08,-.022,.012],[s*.045,.05,.0,.0102],[s*.011,.027,.062,.0105]],.014),.032)); /* V jaw */
+  U(P.ell([0,.09,.03],[.048,.064,.06]),.03);                                /* face mass */
+  pr(s=>U(P.ell([s*.039,.088,.045],[.017,.024,.023]),.024));                /* smooth young cheeks */
+  pr(s=>U(P.ell([s*.047,.1,.055],[.02,.0115,.019],[0,0,s*.25]),.018));      /* high cheekbones */
+  pr(s=>U(P.chain([[s*.055,.08,-.022,.012],[s*.043,.05,.0,.0098],[s*.01,.027,.062,.0102]],.014),.03));  /* sharp V jaw */
   U(P.ell([0,.028,.068],[.0145,.014,.0155]),.02);                            /* pointed chin */
   U(P.ell([0,.065,.073],[.027,.023,.028]),.022);                            /* muzzle */
-  U(P.ell([0,.136,.082],[.046,.011,.02]),.014);                             /* brow ridge */
-  pr(s=>U(P.ell([s*.029,.1348,.0875],[.021,.0074,.011],[0,0,s*.3]),.008));  /* brows: drawn down at the root */
-  U(P.ell([0,.1288,.093],[.0075,.0055,.0065]),.008);                        /* knot between the brows */
-  pr(s=>S(P.ell([s*.0305,.1215,.095],[.0165,.0092,.012],[0,0,s*.2]),.007)); /* sockets */
+  U(P.ell([0,.1375,.082],[.047,.0115,.021]),.014);                          /* defined brow ridge */
+  pr(s=>U(P.ell([s*.029,.1352,.088],[.021,.0074,.011],[0,0,s*.3]),.008));   /* brows: drawn down toward the nose */
+  U(P.ell([0,.1292,.0935],[.0072,.0055,.0065]),.008);                       /* knot between the brows */
+  pr(s=>S(P.ell([s*.0305,.1215,.094],[.017,.0105,.0125],[0,0,s*.18]),.008));/* deep sockets under the brow */
   pr(s=>S(P.ell([s*.075,.14,.046],[.01,.028,.028]),.015));                  /* temples */
-  pr(s=>U(P.ell([s*.0305,.1205,.0832],[.0135,.0096,.0108],[0,0,s*.2]),.003));/* lids */
-  U(P.cone([0,.126,.092],[0,.09,.109],.0055,.0066),.008);                   /* small straight nose */
-  U(P.ell([0,.0852,.1075],[.0068,.0068,.0072]),.005);                       /* tip */
-  pr(s=>U(P.ell([s*.0078,.0815,.0985],[.005,.0046,.0055]),.005));           /* alae */
-  pr(s=>S(P.ell([s*.0054,.0772,.1045],[.0026,.0016,.0034]),.002));          /* nostrils */
-  U(P.ell([0,.0615,.0955],[.0155,.0042,.0076],[-.25,0,0]),.005);            /* thin upper lip */
-  U(P.ell([0,.0528,.0918],[.0132,.0048,.0072],[.2,0,0]),.005);              /* lower lip */
+  pr(s=>{const e=HD.eyes[s>0?0:1];U(P.ell([e[0],e[1],e[2]-.0005],[.0152,.0128,.0138],[0,0,s*.15]),.004);});   /* the lids, wrapped round the eyeball */
+  pr(s=>{const e=HD.eyes[s>0?0:1];S(P.fn(e,.02,(x,y,z)=>MX(almond(s,x,y)+.0006,e[2]-.004-z)),.0028);});  /* the almond opening */
+  U(P.cone([0,.127,.092],[0,.091,.109],.0052,.0064),.007);                  /* narrow straight bridge */
+  U(P.ell([0,.0858,.1072],[.0064,.0064,.007]),.005);                        /* tip */
+  pr(s=>U(P.ell([s*.0076,.0818,.0982],[.0048,.0044,.0053]),.005));          /* alae */
+  pr(s=>S(P.ell([s*.0052,.0775,.104],[.0025,.0015,.0033]),.002));           /* nostrils */
+  U(P.ell([0,.0612,.0948],[.0155,.004,.0074]),.005);                        /* thin, firm upper lip */
+  U(P.ell([0,.0532,.0918],[.0128,.0046,.007]),.005);                        /* lower lip */
   pr(s=>U(P.ell([s*.07,.108,-.022],[.0072,.025,.015],[0,s*.35,s*.12]),.006));/* ears */
   pr(s=>S(P.ell([s*.078,.105,-.018],[.003,.0088,.0056],[0,s*.35,0]),.004));
   U(P.cone([0,-.16,-.014],[0,.075,-.03],.057,.051),.016);                   /* lean neck */
@@ -6636,61 +6652,69 @@ function headSDF(){
 const HL=[[0,.2],[.3,.202],[.55,.19],[.85,.172],[1.1,.15],[1.25,.13],[1.38,.122],[1.52,.148],[1.85,.15],[2.2,.108],[2.6,.066],[3.2,.05]];
 function hairline(a){a=ab(a);for(let i=1;i<HL.length;i++)if(a<=HL[i][0]){const p=HL[i-1],q=HL[i],t=(a-p[0])/(q[0]-p[0]),s=t*t*(3-2*t);return p[1]+(q[1]-p[1])*s;}return .045;}
 function skullF(){const c=HD.cran.f,f=HD.fore.f,o=HD.occ.f;return (x,y,z)=>sm(sm(c(x,y,z),f(x,y,z),.03),o(x,y,z),.03);}
-/* the scalp under the spikes: a thin white cap */
+/* ---------------- the white hair ----------------
+   A wild manga shock, built from separate locks (no sculpted shell on show):
+   · a thin, dark scalp cap only fills the gaps between the roots;
+   · ~200 flat, tapering ribbon-locks, each with its own direction — mostly up,
+     back and out, the way wind and energy throw them — a soft S-curve and a
+     twist along its length, tips drawn to a fine point; some fork into a
+     second, thinner point;
+   · an inner layer of short locks for volume, an outer layer of long jagged
+     ones with clear gaps between them; a tall, tousled crown;
+   · long locks falling over the forehead and the eyes, and past the ears to
+     the jaw; a jagged nape. */
+const GA2=Math.PI*(3-Math.sqrt(5));
 function hairSDF(){
   const sk=skullF();
   return (x,y,z)=>{
     const s=sk(x,y,z),az=Math.atan2(x,z+.012),above=y-hairline(az);
     if(above<-.02)return MX(s,-above)+.004;
-    let d=s-.006*(.35+.65*ss(-.001,.02,above));
-    d=-sm(-d,above,.004);
+    let d=s-.0055*(.35+.65*ss(-.001,.015,above));
+    d=-sm(-d,above,.003);
     const ph=Math.atan2(x,y+.05);
-    d+=ss(-.002,.012,above)*.0012*Math.sin(ph*31+Math.sin(z*27)*1.3);
+    d+=ss(-.002,.012,above)*.0012*Math.sin(ph*29+Math.sin(z*25)*1.2);
     return d;
   };
 }
-/* ---------------- the spiky white hair ----------------
-   Hundreds of flattened, tapered, curving spikes rooted on the scalp: bangs
-   falling over the brow and eyes, a wind-blown shock on top, jagged locks
-   over the ears and at the nape; some fork into a second tip. Strands are
-   kept off the skin by the head's own distance field. Pure arrays, so this
-   can run in a worker. Attributes: aT (0 root .. 1 tip), aSd (per strand). */
 function strands(q){
   q=q||1;
-  const head=headSDF(),sk=skullF();
-  let seed=1337;const rnd=()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+  const head=headSDF(),cap=hairSDF(),sk=skullF();
+  let seed=90210;const rnd=()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
   const grad=(f,p)=>{const e=4e-4;return nrm([f(p[0]+e,p[1],p[2])-f(p[0]-e,p[1],p[2]),f(p[0],p[1]+e,p[2])-f(p[0],p[1]-e,p[2]),f(p[0],p[1],p[2]+e)-f(p[0],p[1],p[2]-e)]);};
   const tang=(v,n)=>{const d=dot(v,n);return [v[0]-n[0]*d,v[1]-n[1]*d,v[2]-n[2]*d];};
-  const RS=6,SEG=7;
-  const pos=[],nor=[],at=[],sd=[],idx=[];
-  const WHORL=[.012,.2,-.075];                                      /* hair grows out from the crown */
-  const WIND=nrm([.45,.18,-1]);                                      /* blown back and up, a little to his left */
-  /* one lock: a flat tapered ribbon that leaves the scalp along the flow and lifts into a point */
-  function lock(p0,flow,len,w0,lift,wind,sid,droop){
-    let p=p0.slice(),n=grad(sk,p0);
-    let d=nrm(add(flow,n,.18));
-    const base=pos.length/3;
+  const rotAbout=(v,k,a)=>{const c=Math.cos(a),s=Math.sin(a),kd=dot(k,v),kx=crs(k,v);return [v[0]*c+kx[0]*s+k[0]*kd*(1-c),v[1]*c+kx[1]*s+k[1]*kd*(1-c),v[2]*c+kx[2]*s+k[2]*kd*(1-c)];};
+  const RS=6,SEG=MX(6,Math.round(9/q));
+  const pos=[],nor=[],at=[],sd=[],au=[],idx=[];
+  const UP=[0,1,0],DN=[0,-1,0],BK=[0,0,-1],FW=[0,0,1],LF=[1,0,0];
+  /* one lock: p0 root, d0 first direction, g the way it is thrown, o:{len,w,turn (how fast it swings
+     toward g), s (S-curve amplitude), tw (twist, rad), clear, fork} */
+  function lock(p0,d0,g,o,sid,depth){
+    let p=p0.slice(),d=nrm(d0);
+    const base=pos.length/3,ds=o.len/SEG,ph=rnd()*6.283;
+    let b=crs(d,grad(cap,p0));{const bl=Math.hypot(b[0],b[1],b[2]);b=bl>1e-6?b.map(v=>v/bl):nrm(crs(d,UP));}
+    const tw=o.tw/SEG;let forkAt=o.fork?Math.round(SEG*(.35+rnd()*.2)):-1;
     for(let i=0;i<=SEG;i++){
       const t=i/SEG;
       if(i>0){
-        const k=t*t;
-        const nn=grad(head,p);
-        d=nrm(add(add(add(d,nn,lift*k*.9),WIND,wind*k),[0,-1,0],droop*t));
-        p=add(p,d,len/SEG);
-        const w=w0*Math.pow(1-t,.7),clear=w*.3+.0065+.004*(1-t),dist=head(p[0],p[1],p[2]);
-        if(dist<clear)p=add(p,nn,clear-dist);
+        /* swing toward the throw, bend in an S, twist */
+        d=nrm(add(add(d,g,o.turn/SEG),b,o.s*Math.cos(ph+t*6.283)/SEG));
+        p=add(p,d,ds);
+        const w=o.w*Math.pow(1-t,.9),dh=head(p[0],p[1],p[2]),cl=(o.clear||.004)+w*.2;
+        if(dh<cl)p=add(p,grad(head,p),cl-dh);
+        const bd=dot(b,d);b=nrm([b[0]-d[0]*bd,b[1]-d[1]*bd,b[2]-d[2]*bd]);
+        b=rotAbout(b,d,tw);
       }
-      const out=grad(head,p);
-      let b=crs(d,out);const bl=Math.hypot(b[0],b[1],b[2]);b=bl>1e-6?b.map(v=>v/bl):nrm(crs(d,[0,1,0]));
-      const o=nrm(crs(b,d));
-      const w=MX(w0*Math.pow(1-t,.7),.0003),th=w*.3+.0006;
+      if(i===forkAt&&depth<1){                               /* a second, thinner point splits off */
+        const sgn=rnd()<.5?-1:1,d2=nrm(add(d,b,sgn*(.5+rnd()*.5)));
+        lock(p,d2,add(g,b,sgn*.6),{len:o.len*(1-t)*(.7+rnd()*.35),w:o.w*Math.pow(1-t,.9)*.55,turn:o.turn,s:o.s*.7,tw:o.tw*.6,clear:o.clear},sid,depth+1);
+      }
+      const nO=nrm(crs(b,d));
+      const w=MX(o.w*Math.pow(1-t,.9)*(.55+.45*ss(0,.25,t)),.00035),th=w*.22+.0005;
       for(let j=0;j<RS;j++){
-        const a=j/RS*Math.PI*2,ca=Math.cos(a),sa=Math.sin(a);
-        /* a slightly ridged section: flat blade with a spine */
-        const r=1-.25*ab(ca);
-        pos.push(p[0]+b[0]*ca*w+o[0]*sa*th*r,p[1]+b[1]*ca*w+o[1]*sa*th*r,p[2]+b[2]*ca*w+o[2]*sa*th*r);
-        const nx=b[0]*ca*th+o[0]*sa*w,ny=b[1]*ca*th+o[1]*sa*w,nz=b[2]*ca*th+o[2]*sa*w,nl=Math.hypot(nx,ny,nz)||1;
-        nor.push(nx/nl,ny/nl,nz/nl);at.push(t);sd.push(sid);
+        const a=j/RS*Math.PI*2,ca=Math.cos(a),sa=Math.sin(a),r=1-.3*ab(ca)*ab(ca);
+        pos.push(p[0]+b[0]*ca*w+nO[0]*sa*th*r,p[1]+b[1]*ca*w+nO[1]*sa*th*r,p[2]+b[2]*ca*w+nO[2]*sa*th*r);
+        const nx=b[0]*ca*th+nO[0]*sa*w,ny=b[1]*ca*th+nO[1]*sa*w,nz=b[2]*ca*th+nO[2]*sa*w,nl=Math.hypot(nx,ny,nz)||1;
+        nor.push(nx/nl,ny/nl,nz/nl);at.push(t);sd.push(sid);au.push(ca);
       }
     }
     for(let i=0;i<SEG;i++)for(let j=0;j<RS;j++){
@@ -6698,49 +6722,68 @@ function strands(q){
       idx.push(a,c,b2,b2,c,e);
     }
   }
-  const C=[0,.13,-.018],GA=Math.PI*(3-Math.sqrt(5));
-  const N=Math.round(330/q);
-  for(let i=0;i<N;i++){
-    const yy=1-(i+.5)/N*1.55,r=Math.sqrt(MX(0,1-yy*yy)),th=i*GA;
-    const dir=[Math.cos(th)*r,yy,Math.sin(th)*r];
-    const p0=SDF.hit(sk,add(C,dir,.3),dir.map(v=>-v),.3);
-    const az=Math.atan2(p0[0],p0[2]+.012),above=p0[1]-hairline(az);
-    if(above<.004)continue;
-    const n=grad(sk,p0),cz=Math.cos(az),front=MX(0,cz),back=MX(0,-cz),side=ab(Math.sin(az)),top=ss(.17,.23,p0[1]);
-    let flow=tang(sub(p0,WHORL),n);
-    if(Math.hypot(...flow)<1e-4)flow=tang([0,0,1],n);
-    flow=nrm(flow);
-    const bang=front>.45&&p0[1]<.24;
-    let len,w0,lift,wind,droop;
-    if(bang){                      /* bangs: fall forward and down over the brow and the eyes */
-      flow=nrm(add(flow,[Math.sin(az)*.45,-.6,.65],.9));
-      len=.07+rnd()*.09;w0=.011+rnd()*.008;lift=.06+rnd()*.2;wind=.02;droop=.55+rnd()*.35;
-    }else if(top>.3){              /* the crown: long locks thrown up and back */
-      flow=nrm(add(flow,[.2,0,-1],.7));
-      len=.09+rnd()*.08;w0=.014+rnd()*.008;lift=.12+rnd()*.35+(rnd()<.15?.5:0);wind=.9+rnd()*.5;droop=.05;
-    }else{                         /* sides and nape: long jagged locks falling past the ears, swept back */
-      len=.07+rnd()*.06+.04*back;w0=.012+rnd()*.007;lift=.1+rnd()*.3+(rnd()<.18?.6:0);wind=.35+rnd()*.35;droop=.35*(1-top)+.1*back;
-    }
-    flow=nrm(add(flow,[rnd()-.5,rnd()-.5,rnd()-.5],.45));
-    const sid=rnd(),pr=add(p0,n,.004);
-    lock(pr,flow,len,w0,lift,wind,sid,droop);
-    if(rnd()<.35){                 /* a forked second point off the lock */
-      const f2=nrm(add(flow,[rnd()-.5,rnd()-.2,rnd()-.5],.9));
-      lock(add(pr,flow,len*.3),f2,len*.6,w0*.6,lift*1.2,wind,sid,droop);
+  const okRoot=p=>ab(cap(p[0],p[1],p[2]))<.002;
+  const C=[0,.13,-.02];
+  /* the hair flows back from the brow and up off the crown; each region then throws its tips its own way */
+  const SW=nrm([.28,.22,-1]);
+  function region(p,az){
+    const top=ss(.165,.23,p[1]),front=MX(0,Math.cos(az)),back=MX(0,-Math.cos(az)),side=ab(Math.sin(az));
+    return {top,front,back,side};
+  }
+  const N=Math.round(175/q);
+  for(let layer=0;layer<2;layer++){
+    const NL=layer?N:Math.round(N*.85);
+    for(let i=0;i<NL;i++){
+      const yy=1-(i+.5+layer*.31)/NL*1.62,r=Math.sqrt(MX(0,1-yy*yy)),th=i*GA2+layer*1.1;
+      const dir=[Math.cos(th)*r,yy,Math.sin(th)*r];
+      const p0=SDF.hit(cap,add(C,dir,.3),dir.map(v=>-v),.3);
+      if(!okRoot(p0))continue;
+      const az=Math.atan2(p0[0],p0[2]+.012),rise=p0[1]-hairline(az);
+      if(rise<.006)continue;
+      const n=grad(cap,p0),R=region(p0,az);
+      if(R.front>.6&&R.top<.35&&rise<.03)continue;                              /* the brow is left to the bangs */
+      const flow=nrm(tang(SW,n));
+      const lift=layer?.3+.28*R.top:.1+.25*R.top;
+      const jit=[rnd()-.5,rnd()-.5,rnd()-.5];
+      const d0=nrm(add(add(flow,n,lift/(1-lift+.2)),jit,.35));
+      let g=[0,0,0];
+      const nh=nrm([n[0],0,n[2]+1e-4]);
+      g=add(g,nrm(add(add(SW,UP,.12+rnd()*.4),nh,.85)),R.top);                   /* crown: tousled up, back and out */
+      g=add(g,nrm(add(add(add(DN,BK,.5),nh,.85),UP,rnd()*.5)),R.side*(1-R.top));  /* sides: flaring out wide, past the ears */
+      g=add(g,nrm(add(add(DN,BK,.9),n,.45)),R.back*(1-R.top));                   /* back: down, back and out */
+      g=nrm(add(g,[rnd()-.5,rnd()-.5,rnd()-.5],layer?.7:.4));                    /* each lock its own way */
+      if(g[1]>.7)g=nrm(add(g,add(BK,nh,.5),.9));                                  /* no single horn straight up */
+      const inner=!layer;
+      const len=MN(.155,(inner?.06+rnd()*.035:.085+rnd()*.07)*(1+.3*R.top+.2*R.side*(1-R.top)));
+      lock(add(p0,n,inner?-.001:.001),d0,g,{len,w:inner?.018+rnd()*.008:.016+rnd()*.014,turn:1.3+rnd()*.8,s:(rnd()<.5?-1:1)*(.8+rnd()*1.6),tw:(rnd()-.5)*2.6,
+        clear:inner?.004:.0055,fork:!inner&&rnd()<.4},rnd(),0);
     }
   }
-  /* nape: a fringe of locks hanging down the back of the neck, over the collar */
-  const NN=Math.round(26/Math.sqrt(q));
-  for(let i=0;i<NN;i++){
-    const az=Math.PI+(rnd()*2-1)*1.25,y=hairline(az)+.008+rnd()*.03,dir=[Math.sin(az),0,Math.cos(az)];
-    const p0=SDF.hit(sk,[dir[0]*.2,y,dir[2]*.2-.012],dir.map(v=>-v),.3),n=grad(sk,p0);
-    const flow=nrm(add(add([0,-1,0],dir,.35),[rnd()-.5,0,rnd()-.5],.5));
-    lock(add(p0,n,.004),flow,.05+rnd()*.05,.012+rnd()*.006,.15+rnd()*.2,.25,rnd(),.5);
+  /* long locks over the forehead and the eyes: they arc off the brow and fall, jagged, with gaps */
+  const NB=Math.round(16/Math.sqrt(q));
+  for(let i=0;i<NB;i++){
+    const u=(i+.5)/NB,az=(u*2-1)*1.0+(rnd()-.5)*.1;
+    const y=hairline(az)+.008+rnd()*.012,dir=[Math.sin(az),0,Math.cos(az)];
+    const p0=SDF.hit(cap,[dir[0]*.3,y,dir[2]*.3-.012],dir.map(v=>-v),.45);if(!okRoot(p0))continue;
+    const n=grad(cap,p0),sx=Math.sin(az);
+    const d0=nrm(add(add(n,UP,.35),[sx,0,0],.3));                                 /* up off the brow first */
+    const g=nrm(add(add(add(DN,FW,.3),[sx,0,0],.35+rnd()*.5),[rnd()-.5,0,rnd()-.5],.5));
+    const long=ab(az)<.55;
+    lock(add(p0,n,.001),d0,g,{len:(long?.125:.09)+rnd()*.05,w:.013+rnd()*.008,turn:4.5+rnd()*1.5,s:(rnd()-.5)*1.4,tw:(rnd()-.5)*1.6,clear:.0065,fork:rnd()<.35},rnd(),0);
   }
+  /* past the ears to the jaw */
+  [1,-1].forEach(s=>{
+    for(let i=0;i<5;i++){
+      const az=s*(1.1+i*.16+rnd()*.05),p0=SDF.hit(cap,[Math.sin(az)*.3,hairline(az)+.012+rnd()*.02,Math.cos(az)*.3-.012],[-Math.sin(az),0,-Math.cos(az)],.45);
+      if(!okRoot(p0))continue;const n=grad(cap,p0);
+      const g=nrm(add(add(DN,n,.25+rnd()*.3),BK,.15+rnd()*.2));
+      lock(add(p0,n,.001),nrm(add(tang(g,n),n,.35)),g,{len:.09+rnd()*.05,w:.012+rnd()*.006,turn:2,s:(rnd()-.5)*1.2,tw:(rnd()-.5)*1.4,clear:.005,fork:rnd()<.3},rnd(),0);
+    }
+  });
   const P32=new Float32Array(pos),N32=new Float32Array(nor),nv=P32.length/3;
-  return {pos:P32,nor:N32,idx:nv>65535?new Uint32Array(idx):new Uint16Array(idx),attr:{aT:new Float32Array(at),aSd:new Float32Array(sd)},evals:0};
+  return {pos:P32,nor:N32,idx:nv>65535?new Uint32Array(idx):new Uint16Array(idx),attr:{aT:new Float32Array(at),aSd:new Float32Array(sd),aU:new Float32Array(au)},evals:0};
 }
-const EYE=[.0124,.005,.006,.28];
+const EYE=[.0118,.0118,.0118,0];
 
 /* ---------------- COAT over an ornate VEST ----------------
    The coat hangs open from the collar: its two front edges run down in a V,
@@ -6757,14 +6800,16 @@ ARMS.forEach(a=>{
 });
 function coatSDF(){
   const L=[],U=(p,k)=>L.push(['u',p,k||0]),S=(p,k)=>L.push(['s',p,k||0]),pr=f=>{f(1);f(-1);};
-  U(P.ell([0,1.378,-.008],[.158,.148,.108]));                                 /* rib cage: lean */
-  U(P.ell([0,1.372,-.034],[.164,.124,.09]),.04);                              /* lats */
-  pr(s=>U(P.ell([s*.066,1.402,.042],[.078,.06,.066],[0,0,s*.15]),.03));       /* chest */
-  U(P.ell([0,1.2,.002],[.128,.14,.094]),.07);                                 /* narrow waist */
-  U(P.ell([0,1.08,0],[.142,.07,.102]),.04);                                   /* hips */
-  pr(s=>U(P.cone([s*.045,1.555,-.03],[s*.155,1.505,-.018],.045,.042),.04));   /* trapezius */
+  /* a lean young man's torso: a flat, square chest block, broad shoulders and a
+     straight V taper to a straight waist (no pinch, no rounded mounds) */
+  U(P.box([0,1.405,-.012],[.152,.1,.086],.058));                              /* chest block: flat front */
+  U(P.ell([0,1.378,-.036],[.176,.12,.088]),.05);                              /* lats: width at the back */
+  U(P.box([0,1.225,-.004],[.134,.1,.08],.055),.08);                           /* abdomen */
+  U(P.box([0,1.085,-.002],[.138,.06,.09],.05),.05);                           /* hips: as wide as the waist */
+  U(P.cone([-.17,1.525,-.018],[.17,1.525,-.018],.046,.046),.05);              /* square shoulder line */
+  pr(s=>U(P.cone([s*.04,1.565,-.03],[s*.16,1.51,-.02],.045,.043),.04));       /* trapezius */
   U(P.cone([0,1.48,-.022],[0,1.605,-.022],.066,.058),.03);                    /* neck base in the collar */
-  pr(s=>U(P.ell([s*.186,1.458,-.008],[.056,.074,.064],[0,0,s*.25]),.03));      /* deltoids */
+  pr(s=>U(P.ell([s*.2,1.462,-.012],[.064,.078,.07],[0,0,s*.3]),.035));        /* deltoids: broad and square */
   ARMS.forEach(a=>{
     U(P.cone(a.S,a.E,.054,.045),.03);
     U(P.sph(a.E,.044),.012);
@@ -6777,8 +6822,8 @@ function coatSDF(){
     if(z>-.02&&y>1.0&&y<1.64&&ab(x)<.16){
       const e=ab(x)-vestEdge(y);
       const fz=ss(-.02,.05,z),top=1-ss(1.6,1.63,y);
-      d+=.0045*(1-ss(-.002,.002,e))*fz*top;                 /* vest recessed */
-      d-=.0018*Math.exp(-((e-.006)*(e-.006))*90000)*fz*top;  /* rolled coat edge */
+      d+=.003*(1-ss(-.002,.002,e))*fz*top;                  /* vest recessed */
+      d-=.0012*Math.exp(-((e-.006)*(e-.006))*90000)*fz*top;  /* rolled coat edge */
       /* centre seam of the vest */
       if(e<0)d+=.0009*Math.exp(-x*x*250000)*fz;
     }
@@ -6941,13 +6986,13 @@ function hiltColor(x,y,z){const g=(y>.95&&y<POM_Y-.03)?1:0;return g?[.05,.036,.0
 const BOX={
   coat:[[-.34,1.02,-.17],[.34,1.68,.31],.008],
   head:[[-.1,-.13,-.13],[.1,.24,.15],.0034],
-  hair:[[-.1,.02,-.14],[.1,.26,.15],.005],
+  hair:[[-.1,.02,-.14],[.1,.26,.15],.0045],
   hands:[[-.17,.93,.09],[.19,1.23,.33],.0036],
   lower:[[-.27,-.01,-.17],[.27,1.0,.26],.0105],
   armor:[[.07,1.34,-.15],[.36,1.62,.14],.0032],
   hilt:[[-.13,.88,.2],[.13,1.14,.29],.0032]
 };
-return {BOX,EYE,strands,VEST,vestEdge,GUARD_Y,GEMS,SW,GRIP_Y,POM_Y,POM_R,HEADP,ARMS,LEG,HD,BELT_Y,BELT_H,BOOT_Y,ARM,hairline,
+return {BOX,EYE,EYEB,strands,VEST,vestEdge,GUARD_Y,GEMS,SW,GRIP_Y,POM_Y,POM_R,HEADP,ARMS,LEG,HD,BELT_Y,BELT_H,BOOT_Y,ARM,hairline,
   headSDF,hairSDF,coatSDF,lowerSDF,handsSDF,armorSDF,armorTrim,hiltSDF,hiltColor,
   util:{add,sub,nrm,crs,dot,lerp,ss,basis}};
 })();
@@ -7083,9 +7128,9 @@ const M={
   coat:   new T.MeshPhysicalMaterial({color:0x0b0a0d,roughness:.76,metalness:0,specularIntensity:.55,sheen:.6,sheenRoughness:.55,sheenColor:0x2c2a36,envMapIntensity:.35}),
   lower:  new T.MeshStandardMaterial({color:0xffffff,roughness:.8,metalness:0,envMapIntensity:.45}),
   glove:  new T.MeshStandardMaterial({color:0xffffff,roughness:.45,metalness:.05,envMapIntensity:.6}),
-  skin:   new T.MeshStandardMaterial({color:0xffffff,roughness:.5,metalness:0,envMapIntensity:.22}),
-  hair:   new T.MeshStandardMaterial({color:0xffffff,roughness:.42,metalness:0,envMapIntensity:.6}),
-  scalp:  new T.MeshStandardMaterial({color:0x34353c,roughness:.7,metalness:0,envMapIntensity:.3}),
+  skin:   new T.MeshPhysicalMaterial({color:0xffffff,roughness:.62,metalness:0,specularIntensity:.32,sheen:.55,sheenRoughness:.55,sheenColor:0xff9b82,envMapIntensity:.18}),
+  hair:   new T.MeshStandardMaterial({color:0xffffff,roughness:.5,metalness:0,envMapIntensity:.35,side:T.DoubleSide}),
+  scalp:  new T.MeshStandardMaterial({color:0xffffff,roughness:.62,metalness:0,envMapIntensity:.35}),
   silver: new T.MeshStandardMaterial({color:0x9a9aa6,roughness:.3,metalness:1,envMapIntensity:1}),
   hilt:   new T.MeshStandardMaterial({color:0xffffff,roughness:.32,metalness:1,envMapIntensity:1}),
   steel:  new T.MeshPhysicalMaterial({color:0xd6dae4,roughness:.16,metalness:1,clearcoat:.6,clearcoatRoughness:.18}),
@@ -7148,27 +7193,45 @@ paint(M.hilt,'hilt',{
     diffuseColor.rgb=mix(vec3(.22,.21,.24),vec3(.035,.025,.02),gp);vGp=gp;}`,
   metal:'metalnessFactor=mix(metalnessFactor,0.,vGp);',rough:'roughnessFactor=mix(roughnessFactor,.62,vGp);'
 });
-/* hair: white-silver, a little cooler at the roots; locks flutter at the tips */
+/* hair: ash-white clumps with cool blue-grey in the clefts; soft, streaky highlights that never
+   clip to pure white under the bloom; the tips flutter in the wind */
 const hairU={uTime:{value:0},uGust:{value:0}};
 paint(M.hair,'hair',{
   uniforms:hairU,
-  vhead:'attribute float aT;attribute float aSd;varying float vT;varying float vSd;uniform float uTime;uniform float uGust;',
-  vert:`vT=aT;vSd=aSd;
-    {float k=aT*aT,ph=uTime*(2.3+aSd*1.7)+aSd*40.;
-     transformed+=vec3(.35,.3,-1.)*k*(.0035*sin(ph)+.0022*sin(ph*2.3+1.)+.006*uGust*(.6+.4*sin(ph*3.1)));}`,
-  head:'varying float vT;varying float vSd;',
+  vhead:'attribute float aT;attribute float aSd;attribute float aU;varying float vT;varying float vSd;varying float vU;uniform float uTime;uniform float uGust;',
+  vert:`vT=aT;vSd=aSd;vU=aU;
+    {float k=aT*aT,ph=uTime*(2.1+aSd*1.5)+aSd*40.;
+     transformed+=vec3(.35,.3,-1.)*k*(.0028*sin(ph)+.0018*sin(ph*2.3+1.)+.005*uGust*(.6+.4*sin(ph*3.1)));}`,
+  head:'varying float vT;varying float vSd;varying float vU;',
   color:`{
-    vec3 c=mix(vec3(.52,.54,.6),vec3(.93,.94,.97),smoothstep(.0,.55,vT));
-    c*=.86+.18*vSd;
+    float edge=abs(vU);
+    vec3 c=mix(vec3(.32,.36,.45),vec3(.84,.86,.9),smoothstep(.0,.45,vT));     /* cool roots, ash-white body */
+    c=mix(c,vec3(.36,.4,.5),smoothstep(.55,1.,edge)*.6);                          /* blue-grey clefts between clumps */
+    c*=.9+.14*vSd;
     diffuseColor.rgb=c;
   }`,
-  rough:'roughnessFactor=mix(.55,.36,vT);'
+  rough:'roughnessFactor=mix(.42,.72,smoothstep(.2,.9,abs(vU)));',                /* a streak of sheen down each lock's spine */
+  frag:s=>s.replace('#include <opaque_fragment>','#include <opaque_fragment>\n gl_FragColor.rgb=min(gl_FragColor.rgb,vec3(.9));')
+});
+/* the mass under the locks: the same white, darker and bluer down in its grooves */
+paint(M.scalp,'hairmass',{
+  color:`{
+    vec3 P=vLP;
+    float ph=atan(P.x-.25*(P.z+.02),P.y+.06);
+    float g=abs(sin(ph*9.+sin(P.z*14.)*.9));
+    vec3 c=mix(vec3(.16,.18,.24),vec3(.42,.45,.52),smoothstep(.0,.6,g));        /* dark: only seen in the gaps */
+    c*=mix(.7,1.,smoothstep(.1,.2,P.y));
+    diffuseColor.rgb=c;
+  }`,
+  rough:'roughnessFactor=.62;',
+  frag:s=>s.replace('#include <opaque_fragment>','#include <opaque_fragment>\n gl_FragColor.rgb=min(gl_FragColor.rgb,vec3(.8));')
 });
 if(FX){
   FX.rim(M.coat,0xa8b4d8,3.2,.06);
   FX.rim(M.lower,0xa8b4d8,3.2,.05);
   FX.rim(M.glove,0xc8d0e8,3,.07);
-  FX.rim(M.hair,0xe8eeff,2.2,.22);
+  FX.rim(M.hair,0xc8d4f0,2.6,.07);
+  FX.rim(M.scalp,0xc8d4f0,2.6,.05);
   FX.rim(M.skin,0xffc9a0,3,.08);
   FX.rim(M.steel,0xe6ecff,3,.45);
 }
@@ -7208,56 +7271,99 @@ function crackTexture(){
   return tex;
 }
 const skinU={uCrack:{value:null},uEmber:{value:.6}};
+/* the almond of each eye, in GLSL (same shape the head is carved with) */
+const EB=FIG.EYEB,EYES=FIG.HD.eyes;
+const ALMOND=`float almond(float s,vec2 P){
+    vec2 e=s>0.?vec2(${EYES[0][0].toFixed(4)},${EYES[0][1].toFixed(4)}):vec2(${EYES[1][0].toFixed(4)},${EYES[1][1].toFixed(4)});
+    vec2 d=P-e;float c=${Math.cos(EB.tilt).toFixed(5)},sn=${Math.sin(EB.tilt).toFixed(5)};
+    float u=s*d.x*c+d.y*sn,v=-s*d.x*sn+d.y*c;
+    float hh=${EB.hh.toFixed(5)},a=${EB.a.toFixed(5)},rr=(a*a/hh+hh)*.5,dd=rr-hh;
+    vec2 q=vec2(abs(v),abs(u));
+    float ves=((q.y-a)*dd>q.x*a)?length(q-vec2(0.,a)):length(q+vec2(dd,0.))-rr;
+    return max(ves,v-(${EB.cut[0].toFixed(4)}+${EB.cut[1].toFixed(3)}*u));
+  }`;
 paint(M.skin,'skin',{
   uniforms:skinU,
   head:`uniform sampler2D uCrack;uniform float uEmber;float vCk=0.,vEm=0.;
+    ${ALMOND}
     float brow(vec3 p,float s){
-      float ax=p.x*s;if(ax<.007||ax>.054||p.z<.06)return 0.;
-      float t=(ax-.007)/.047;
-      float yc=.1322+t*.0105-t*t*.0045;                 /* drawn down hard at the root: fury */
-      float w=mix(.0042,.0018,t);
-      return (1.-smoothstep(w*.55,w,abs(p.y-yc)))*smoothstep(.0,.12,t)*(1.-smoothstep(.85,1.,t));
+      float ax=p.x*s;if(ax<.006||ax>.052||p.z<.06)return 0.;
+      float t=(ax-.006)/.046;
+      float yc=.1318+t*.0112-t*t*.0048;                 /* angled down hard toward the nose */
+      float w=mix(.0044,.0016,t);
+      return (1.-smoothstep(w*.5,w,abs(p.y-yc)))*smoothstep(.0,.1,t)*(1.-smoothstep(.82,1.,t));
     }`,
   color:`{
     vec3 P=vLP;
-    vec3 c=vec3(.5,.45,.44);
-    c=mix(c,vec3(.5,.46,.46),smoothstep(.13,.19,P.y));
-    c*=1.-.2*smoothstep(.05,.075,abs(P.x))*smoothstep(.1,.13,P.y);   /* temples in shade */
-    /* eye sockets hold shadow so the glowing eyes sit deep */
-    float so=0.;
-    for(int i=0;i<2;i++){float s=i==0?1.:-1.;vec2 d=(P.xy-vec2(s*.0305,.122))*vec2(1.,1.3);so=max(so,1.-smoothstep(.008,.024,length(d)));}
-    c*=1.-.55*so*smoothstep(.06,.08,P.z);
-    /* lips, and the line between them */
-    vec2 lp=(P.xy-vec2(0.,.0545))/vec2(.016,.0085);
-    c=mix(c,vec3(.42,.26,.24),(1.-smoothstep(.75,1.,length(lp)))*smoothstep(.083,.093,P.z)*.7);
-    float ml=(1.-smoothstep(.0005,.0014,abs(P.y-.0548+.00005*P.x*P.x*1e3)))*(1.-smoothstep(.012,.017,abs(P.x)))*step(.088,P.z);
-    c*=1.-.8*ml;
-    c*=mix(.7,1.,smoothstep(-.005,.03,P.y));
-    /* a flush of blood over the nose and cheeks */
-    c=mix(c,c*vec3(1.1,.93,.92),(1.-smoothstep(.0,.02,length(P.xy-vec2(0.,.085))))*.5);
-    for(int i=0;i<2;i++){float s=i==0?1.:-1.;c=mix(c,c*vec3(1.08,.95,.94),(1.-smoothstep(.0,.022,length(P.xy-vec2(s*.042,.088))))*.45*step(.02,P.z));}
-    /* brows */
+    /* pale, but alive: warm ivory, rosier over the nose, cheeks, lips and ears */
+    vec3 c=vec3(.62,.5,.46);
+    c=mix(c,vec3(.61,.51,.48),smoothstep(.12,.19,P.y));
+    c=mix(c,vec3(.68,.42,.36),(1.-smoothstep(.0,.018,length(P.xy-vec2(0.,.086))))*.45*step(.09,P.z));
+    for(int i=0;i<2;i++){float s=i==0?1.:-1.;
+      c=mix(c,vec3(.68,.43,.37),(1.-smoothstep(.0,.02,length(P.xy-vec2(s*.041,.083))))*.35*step(.02,P.z));
+      c=mix(c,vec3(.64,.38,.33),(1.-smoothstep(.0,.02,length(P.yz-vec2(.105,-.02))))*step(.06,abs(P.x))*.5);}
+    /* painted light and shade, so the planes of the face read in a dim scene */
+    float ao=1.;
+    for(int i=0;i<2;i++){float s=i==0?1.:-1.;
+      vec2 d=(P.xy-vec2(s*.0305,.1215))*vec2(.8,1.15);
+      ao*=1.-.42*(1.-smoothstep(.009,.026,length(d)))*smoothstep(.06,.08,P.z);     /* deep-set eyes */
+      vec2 h=(P.xy-vec2(s*.047,.07))/vec2(.012,.02);
+      ao*=1.-.16*(1.-smoothstep(.2,1.,length(h)))*step(.02,P.z);                   /* under the cheekbone */
+      ao*=1.-.2*smoothstep(.02,.0,abs(P.x*s-.0135))*(1.-smoothstep(.0,.03,abs(P.y-.1)))*step(.09,P.z)*0.;
+    }
+    ao*=1.-.3*(1.-smoothstep(.0,.008,abs(P.y-.0765)))*(1.-smoothstep(.006,.012,abs(P.x)))*step(.098,P.z);   /* under the nose */
+    ao*=1.-.3*(1.-smoothstep(.0,.006,abs(P.y-.047)))*(1.-smoothstep(.01,.016,abs(P.x)))*step(.085,P.z);     /* under the lower lip */
+    ao*=1.-.35*(1.-smoothstep(-.004,.014,P.y))*step(.0,P.z);                     /* under the jaw */
+    ao*=1.-.18*smoothstep(.052,.07,abs(P.x))*smoothstep(.1,.13,P.y);            /* temples */
+    c*=ao;
+    /* lips: a firm, closed line */
+    vec2 lp=(P.xy-vec2(0.,.0575))/vec2(.0155,.0078);
+    c=mix(c,vec3(.52,.32,.3)*ao,(1.-smoothstep(.7,1.,length(lp)))*smoothstep(.085,.093,P.z)*.55);
+    float ml=(1.-smoothstep(.0004,.0011,abs(P.y-.0574+ .6*P.x*P.x)))*(1.-smoothstep(.013,.0165,abs(P.x)))*step(.09,P.z);
+    c*=1.-.7*ml;
+    /* the eyes: a dark upper lid line, a softer lower one, shadowed lids */
+    for(int i=0;i<2;i++){float s=i==0?1.:-1.;
+      float al=almond(s,P.xy),up=step(${EYES[0][1].toFixed(4)},P.y);
+      float fr=smoothstep(.07,.082,P.z);
+      c=mix(c,vec3(.035,.03,.035),(1.-smoothstep(.0,mix(.0006,.0017,up),al))*fr*mix(.55,.95,up));
+      c*=1.-.3*(1.-smoothstep(.0,.006,al))*up*fr;
+    }
+    /* brows, and the scowl between them */
     float b=max(brow(P,1.),brow(P,-1.));
-    c=mix(c,vec3(.2,.2,.23),b*.85);                      /* brows drawn hard */
-    /* the scowl: a furrow between the brows, shadow under the brow ridge */
-    c*=1.-.35*(1.-smoothstep(.002,.006,abs(P.x)))*(1.-smoothstep(.0,.01,abs(P.y-.131)))*step(.085,P.z);
-    c*=1.-.25*smoothstep(.02,.0,abs(P.y-.128))*smoothstep(.012,.02,abs(P.x))*(1.-smoothstep(.045,.055,abs(P.x)))*step(.07,P.z);
-    /* the cracks: cylindrical projection around the skull */
+    c=mix(c,vec3(.24,.22,.24),b*.85);
+    c*=1.-.3*(1.-smoothstep(.0015,.005,abs(P.x)))*(1.-smoothstep(.0,.009,abs(P.y-.1305)))*step(.088,P.z);
+    /* the Season II cracks: only a faint trace now */
     float th=atan(P.x,P.z+.012);
     vec2 cu=vec2((th-(${CRK.u0.toFixed(3)}))/${(CRK.u1-CRK.u0).toFixed(3)},(P.y-${CRK.v0.toFixed(3)})/${(CRK.v1-CRK.v0).toFixed(3)});
     if(cu.x>0.&&cu.x<1.&&cu.y>0.&&cu.y<1.&&P.z>-.05){
       vec3 k=texture2D(uCrack,cu).rgb;
-      c=mix(c,c*.6,k.g*.5);
-      c=mix(c,vec3(.03,.02,.025),smoothstep(.3,.8,k.r)*.7);
-      vCk=smoothstep(.25,.7,k.r);vEm=k.b;
+      c=mix(c,c*.72,smoothstep(.3,.8,k.r)*.55);
+      vCk=smoothstep(.3,.8,k.r)*.4;vEm=k.b*.25;
     }
     diffuseColor.rgb=c;
   }`,
-  rough:'roughnessFactor=mix(roughnessFactor,.28,vCk);',
-  emis:'totalEmissiveRadiance+=vec3(1.,.34,.07)*vEm*uEmber;'
+  rough:'roughnessFactor=mix(roughnessFactor,.4,vCk);',
+  emis:'totalEmissiveRadiance+=vec3(1.,.34,.07)*vEm*uEmber;',
+  frag:s=>s.replace('#include <lights_fragment_end>','#include <lights_fragment_end>\n  reflectedLight.indirectDiffuse+=diffuseColor.rgb*vec3(.07,.022,.014);   /* light scattered under the skin */')
 });
 
-const eyeMat=new T.MeshBasicMaterial({color:hdr(0xffc890,2.2),toneMapped:false});
+const eyeMat=new T.MeshBasicMaterial({color:hdr(0xffa850,1.5),toneMapped:false});
+/* the eyeball (unit sphere, looking down +z): a dim ember-lit white, and a
+   burning iris — white-hot at its heart, amber, a darker rim — that stays inside the eye */
+paint(eyeMat,'eye',{
+  color:`{
+    vec3 P=normalize(vLP);
+    vec2 q=P.xy-vec2(0.,-.06);float r=length(q);
+    float front=smoothstep(.2,.6,P.z);
+    vec3 scl=vec3(.34,.24,.2)*(.55+.45*front);
+    float iris=1.-smoothstep(.47,.52,r);
+    vec3 ic=diffuse*mix(1.,.55,smoothstep(.2,.48,r));
+    ic=mix(ic,vec3(1.8,1.6,1.3),1.-smoothstep(.0,.2,r));            /* white-hot heart */
+    ic*=1.-.45*smoothstep(.38,.5,r);                                  /* darker limbal ring */
+    ic*=1.-.35*(1.-smoothstep(.03,.07,r));                            /* a small pupil */
+    diffuseColor.rgb=mix(scl,ic,iris*front);
+  }`
+});
 await slice();
 
 /* ---------------- figure hierarchy ----------------
@@ -7431,7 +7537,7 @@ function extras(){
   FIG.HD.eyes.forEach((e,i)=>{
     const m=new T.Mesh(new T.SphereGeometry(1,20,12),eyeMat);m.position.set(e[0],e[1],e[2]);const k=FIG.EYE;m.scale.set(k[0],k[1],k[2]);m.rotation.z=(i?-1:1)*k[3];headS.add(m);
     const gl=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:hdr(0xff5a2a,1.2),transparent:true,opacity:.55,blending:T.AdditiveBlending,depthWrite:false}));
-    gl.position.set(e[0],e[1],e[2]+.006);gl.scale.set(.05,.03,1);headS.add(gl);eyeGlow.push(gl);
+    gl.position.set(e[0],e[1],e[2]+.016);gl.scale.set(.03,.02,1);headS.add(gl);eyeGlow.push(gl);
   });
   /* tall collar */
   put(new T.Mesh(collarGeo(),M.coat),tb);
@@ -7455,10 +7561,8 @@ function extras(){
       const a=i*Math.PI/2+Math.PI/4,sp=new T.Mesh(new T.ConeGeometry(.0065,.028,4),M.silver);
       sp.position.set(Math.cos(a)*.046,Math.sin(a)*.046,0);sp.rotation.z=a-Math.PI/2;sp.scale.set(1,1,.5);cl.add(sp);
     }
-    [-1,1].forEach(s=>{                                         /* scrolls sweeping out to the collar */
-      const c=new T.CatmullRomCurve3([V(s*.03,.012,0),V(s*.05,.03,-.002),V(s*.062,.058,-.008),V(s*.05,.075,-.014),V(s*.038,.066,-.012)]);
-      cl.add(new T.Mesh(new T.TubeGeometry(c,24,.0022,5,false),M.silver));
-    });
+    /* a short bar up to the collar: the clasp hangs from it, flat on the vest */
+    {const bar=new T.Mesh(new T.BoxGeometry(.006,.05,.004),M.silver);bar.position.set(0,.06,-.001);cl.add(bar);}
     cl.traverse(n=>{if(n.isMesh){n.castShadow=true;}});
   }
   /* jewels on the guard and the pommel */
@@ -7804,7 +7908,18 @@ let mx=0,my=0,tmx=0,tmy=0;
 addEventListener('pointermove',e=>{tmx=e.clientX/innerWidth*2-1;tmy=e.clientY/innerHeight*2-1},{passive:true});
 let prog=0,progS=0;
 const GEO=window.AOSO_PERF&&AOSO_PERF.geo;
-function readScroll(){const r=GEO?GEO.rect(sec):sec.getBoundingClientRect();prog=Math.min(1,Math.max(0,-r.top/Math.max(1,r.height-innerHeight)))}
+/* the shell slides this chapter in under a veil and out under the next one: the story (camera
+   shots and captions) runs over the part of the scroll where the scene is actually uncovered.
+   The overlaps are read from the CSS once, and again on resize. */
+let ovIn=0,ovOut=0;
+function measureOv(){
+  const flat=document.documentElement.classList.contains('flat3d'),m=el=>Math.max(0,-(parseFloat(getComputedStyle(el).marginTop)||0));
+  let n=sec.nextElementSibling;while(n&&!(n.matches&&n.matches('section,header,footer')))n=n.nextElementSibling;
+  ovIn=flat?0:m(sec)*.9;ovOut=flat||!n?0:m(n)*.9;
+}
+measureOv();
+function readScroll(){const r=GEO?GEO.rect(sec):sec.getBoundingClientRect(),span=Math.max(1,r.height-innerHeight);
+  prog=Math.min(1,Math.max(0,(-r.top-ovIn)/Math.max(1,span-ovIn-ovOut)));}
 addEventListener('scroll',readScroll,{passive:true});readScroll();progS=prog;
 
 const steps=[...sec.querySelectorAll('.a3-step')],dots=[...sec.querySelectorAll('.a3-dots i')];
@@ -7818,7 +7933,7 @@ function paintSteps(){
 
 let dirty=true;                     /* reduced motion: something changed, draw one more frame */
 function size(){
-  dirty=true;
+  dirty=true;measureOv();readScroll();
   const w=canvas.clientWidth||innerWidth,h=canvas.clientHeight||innerHeight;
   renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
 }
@@ -7877,13 +7992,13 @@ function frame(){
   head.rotation.x+=(my*.1+.03-head.rotation.x)*.06;
   capeU.uTime.value=t;coatU.uTime.value=t;
   const b=CALM?.5:beat(t);
-  M.sigil.emissiveIntensity=1.6+b*3.4;
+  M.sigil.emissiveIntensity=1.1+b*2.;
   sigilLight.intensity=.035+b*.1;
   sigil.getWorldPosition(sigilLight.position);sigilLight.position.z+=.1;
-  halo.scale.setScalar(1+b*.35);haloMat.opacity=.3+b*.55;
+  halo.scale.setScalar(1+b*.3);haloMat.opacity=.22+b*.4;
   runeMat.color.copy(hdr(0xffb347,2.2+Math.sin(t*2.3)*.8));
-  eyeMat.color.copy(hdr(0xffc890,2.1+Math.sin(t*.9)*.3));
-  eyeGlow.forEach(g=>{g.material.opacity=.45+Math.sin(t*.9)*.1;});
+  eyeMat.color.copy(hdr(0xffa850,1.45+Math.sin(t*.9)*.15));
+  eyeGlow.forEach(g=>{g.material.opacity=.18+Math.sin(t*.9)*.04;});
   hairU.uTime.value=t;
   skinU.uEmber.value=.1+b*.12;
 
@@ -8855,7 +8970,6 @@ function strands(K,U,list,o){
 }
 return {KIT,LIB,kit,build,geo,Soup,plate,skin,strands,DESAT,KNEE};
 })();
-/* sculpt jobs (self-contained: they are stringified into the meshing worker) */
 WB.LIB.armorHead=function(K,q){          /* head space: origin at the neck pivot, faces +z */
   const P=K.P,sq=K.sq,MX=K.MX,MN=K.MN,n3=K.n3;
   const L=[],U=(p,k)=>L.push(['u',p,k||0]),S=(p,k)=>L.push(['s',p,k||0]);
@@ -8888,7 +9002,7 @@ WB.LIB.armorHead=function(K,q){          /* head space: origin at the neck pivot
 WB.LIB.armorCowl=function(K,q){          /* a heavy cowl wound round the neck, higher at the back */
   const P=K.P,sq=K.sq,MX=K.MX,MN=K.MN,n3=K.n3;
   const L=[],U=(p,k)=>L.push(['u',p,k||0]);
-  const top=a=>2.075+.06*(1-Math.cos(a))*.5+.008*Math.sin(a*3);           /* rim height: low at the front, high at the back */
+  const top=a=>2.075+(q.cowlBack||.06)*(1-Math.cos(a))*.5+.008*Math.sin(a*3);   /* rim height: low at the front, high at the back */
   U(P.fn([0,1.93,.02],.32,(x,y,z)=>{
     const dz=z-.018,a=Math.atan2(x,dz),yt=top(a),t=MN(1,MX(0,(y-1.76)/(yt-1.76))),r=.19-.068*t*t;
     const fold=.016*Math.sin(a*5+y*22)*(.4+.6*t)+.008*Math.sin(a*11-y*37)+.01*(n3(x*12,y*12,z*12)-.5);
@@ -8900,152 +9014,243 @@ WB.LIB.armorCowl=function(K,q){          /* a heavy cowl wound round the neck, h
     let px=x,py=y-1.89,pz=z-.03;const c=Math.cos(.26),sn=Math.sin(.26);const qy=py*c-pz*sn,qz=py*sn+pz*c;py=qy;pz=qz;
     const a=Math.atan2(px,pz),rr=sq(px*px+pz*pz)-.178-.012*Math.sin(a*3);
     return sq(rr*rr+py*py*2.6)-.023-.007*Math.sin(a*8+y*30)-.006*(n3(x*18,y*18,z*18)-.5);}),.04);
-  return {f:K.sculpt(L),lo:[-.27,1.76,-.25],hi:[.27,2.18,.27],h:.012*q.h,ao:.03,
+  return {f:K.sculpt(L),lo:[-.27,1.76,-.25],hi:[.27,2.3,.27],h:.0135*q.h,ao:.03,
     col:function(x,y,z,nx,ny,nz,o){const c=.085*(.85+.3*n3(x*16,y*16,z*16));o[0]=c;o[1]=c*.96;o[2]=c*1.05;}};
 };
-WB.LIB.armorBody=function(K,q){          /* the dark under-layer: torso, shoulders, arms */
-  const P=K.P,sq=K.sq,MX=K.MX,MN=K.MN;
-  const A=K.tab(q.pA),Bz=K.tab(q.pB),Z=K.tab(q.pZ);
+WB.LIB.armorBody=function(K,q){          /* the massive under-body: barrel chest, broad shoulders, thick neck, arms, hips */
+  const P=K.P,sq=K.sq,MX=K.MX,MN=K.MN,n3=K.n3,ab=K.ab;
+  const A=K.tab(q.pA),Bz=K.tab(q.pB),Z=K.tab(q.pZ),J=q.J;
   const L=[],U=(p,k)=>L.push(['u',p,k||0]);
-  U(P.fn([0,1.42,0],.62,(x,y,z)=>{const yc=MN(1.87,MX(.96,y)),a=A(yc),b=Bz(yc),qx=x/a,qz=(z-Z(yc))/b;return MX((sq(qx*qx+qz*qz)-1)*MN(a,b)*.95,.96-y,y-1.87);}),0);
+  U(P.fn([0,1.44,0],.66,(x,y,z)=>{const yc=MN(1.93,MX(.95,y)),a=A(yc),b=Bz(yc),qx=x/a,qz=(z-Z(yc))/b;return MX((sq(qx*qx+qz*qz)-1)*MN(a,b)*.95,.95-y,y-1.93);}),0);
+  U(P.cone([0,1.78,-.012],[0,2.0,-.012],.13,.1),.06);                               /* a bull neck under the scarf */
+  U(P.ell([0,1.0,0],[.3,.15,.21]),.06);                                             /* hips */
   [-1,1].forEach(s=>{
-    U(P.ell([s*.29,1.75,-.012],[.13,.09,.12]),.06);
-    U(P.chain([[s*.37,1.74,-.012,.074],[s*.45,1.36,0,.066],[s*.49,1.0,.1,.05]],.02),.04);
+    const S=J.S,E=J.E,W=J.W;
+    U(P.cone([s*.08,1.9,-.03],[s*.43,1.79,-.01],.1,.085),.06);                      /* trapezius */
+    U(P.ell([s*.47,1.745,-.005],[.15,.14,.15]),.07);                                 /* deltoid */
+    U(P.chain([[s*S[0],S[1],S[2],.1],[s*(S[0]+E[0])/2,(S[1]+E[1])/2,(S[2]+E[2])/2,.094],[s*E[0],E[1],E[2],.088]],.02),.05);   /* upper arm */
+    U(P.chain([[s*E[0],E[1],E[2],.088],[s*(E[0]*.45+W[0]*.55),E[1]*.45+W[1]*.55,E[2]*.45+W[2]*.55,.08],[s*W[0],W[1],W[2],.064]],.02),.02);   /* forearm */
   });
-  return {f:K.sculpt(L),lo:[-.6,.94,-.26],hi:[.6,1.9,.3],h:.026*q.h,
-    col:function(x,y,z,nx,ny,nz,o){o[0]=.03;o[1]=.028;o[2]=.032;}};
+  /* the sleeve under the pauldron: heavy folds */
+  L.push(['fn',(d,x,y,z)=>{const ax=ab(x);if(d>.02||ax<.4||y<1.34||y>1.7)return d;
+    const m=MN(1,(y-1.34)/.05)*MN(1,(1.7-y)/.06);return d-m*.006*Math.sin(y*80+ax*30+Math.sin(z*40)*1.5);}]);
+  return {f:K.sculpt(L),lo:[-.72,.84,-.3],hi:[.72,2.02,.32],h:.027*q.h,ao:.03,
+    col:function(x,y,z,nx,ny,nz,o){const c=.07*(.8+.4*n3(x*14,y*14,z*14));o[0]=c;o[1]=c*.97;o[2]=c*1.06;}};
 };
-
+WB.LIB.armorLegs=function(K,q){          /* armoured legs under the robe: cuisses, knee cops, greaves, sabatons */
+  const P=K.P,sq=K.sq,MX=K.MX,MN=K.MN,n3=K.n3;
+  const L=[],U=(p,k)=>L.push(['u',p,k||0]);
+  [-1,1].forEach(s=>{
+    const H=[s*.155,1.04,0],Kn=[s*.205,.57,.03],A=[s*.24,.12,0];
+    U(P.cone(H,Kn,.128,.1),.03);                                                    /* cuisse */
+    U(P.cone([Kn[0],Kn[1]+.2,Kn[2]+.07],[Kn[0],Kn[1]+.04,Kn[2]+.085],.03,.022),.03); /* its ridge */
+    U(P.ell([Kn[0],Kn[1],Kn[2]+.06],[.088,.078,.058]),.02);                         /* knee cop */
+    U(P.cone([Kn[0],Kn[1],Kn[2]+.1],[Kn[0],Kn[1]-.03,Kn[2]+.16],.022,.003),.012);   /* its spike */
+    U(P.cone(Kn,A,.098,.072),.025);                                                 /* greave */
+    U(P.cone([Kn[0],Kn[1]-.07,Kn[2]+.085],[A[0],A[1]+.06,A[2]+.066],.013,.01),.02); /* shin ridge */
+    U(P.chain([[A[0],A[1]+.02,A[2]-.01,.08],[A[0]+s*.008,A[1]-.055,A[2]+.08,.064],[A[0]+s*.016,.035,A[2]+.2,.034],[A[0]+s*.02,.018,A[2]+.28,.008]],.02),.04);  /* sabaton */
+  });
+  /* lames: shallow grooves round the greaves and across the sabatons */
+  L.push(['fn',(d,x,y,z)=>{if(d>.012||y>.5)return d;const g=y<.16?Math.sin((z-y*.3)*95):Math.sin(y*62);return d+.0035*Math.max(0,g)*Math.max(0,g);}]);
+  const sc=K.sculpt(L);
+  const f=(x,y,z)=>MX(sc(x,y,z),-y);                     /* flat soles */
+  f.cull=sc.cull?(x,y,z,R,dc)=>{const c=sc.cull(x,y,z,R,dc);return (a,b,cc)=>MX(c(a,b,cc),-b);}:null;
+  const e=.006,lap=(x,y,z)=>(f(x+e,y,z)+f(x-e,y,z)+f(x,y+e,z)+f(x,y-e,z)+f(x,y,z+e)+f(x,y,z-e)-6*f(x,y,z))/(e*e);
+  return {f,lo:[-.4,-.01,-.2],hi:[.4,1.1,.3],h:.027*q.h,ao:.03,
+    col:function(x,y,z,nx,ny,nz,o){const w=Math.max(0,Math.min(1,(lap(x,y,z)-20)/60));const c=.075*(.85+.3*n3(x*24,y*24,z*24))+.36*w*w;o[0]=c;o[1]=c*.98;o[2]=c*1.05;}};
+};
+WB.LIB.armorHand=function(K,q){          /* one plated gauntlet (his left); the right is its mirror image */
+  const sq=Math.sqrt,MX=Math.max,MN=Math.min,ab=Math.abs;
+  const H=q.hand,W=H.W,Bk=H.Bk,Up=H.Up,Th=H.Th;       /* wrist, back-of-hand (outward), toward the wrist, thumb side (front) */
+  /* local primitives (x: back of the hand, y: toward the wrist, z: thumb side) */
+  const prims=[];
+  const cap=(a,b,r1,r2,k)=>{const P=K.P.cone(a,b,r1,r2);prims.push({f:P.f,c:P.c,r:P.r,k:k||0});};
+  const sph=(c,r,k)=>{const P=K.P.sph(c,r);prims.push({f:P.f,c,r,k:k||0});};
+  const ell=(c,s,k)=>{const P=K.P.ell(c,s);prims.push({f:P.f,c,r:MX(s[0],s[1],s[2]),k:k||0});};
+  const rbox=(c,h,rr,k)=>{const cx=c[0],cy=c[1],cz=c[2],hx=h[0]-rr,hy=h[1]-rr,hz=h[2]-rr;
+    prims.push({c,r:sq(h[0]*h[0]+h[1]*h[1]+h[2]*h[2]),k:k||0,f:(x,y,z)=>{const dx=ab(x-cx)-hx,dy=ab(y-cy)-hy,dz=ab(z-cz)-hz;
+      return sq(MX(dx,0)**2+MX(dy,0)**2+MX(dz,0)**2)+MN(MX(dx,MX(dy,dz)),0)-rr;}});};
+  const obox=(c,u,v,w,h,rr,k)=>{const hx=h[0]-rr,hy=h[1]-rr,hz=h[2]-rr;
+    prims.push({c,r:sq(h[0]*h[0]+h[1]*h[1]+h[2]*h[2]),k:k||0,f:(x,y,z)=>{const px=x-c[0],py=y-c[1],pz=z-c[2];
+      const dx=ab(px*u[0]+py*u[1]+pz*u[2])-hx,dy=ab(px*v[0]+py*v[1]+pz*v[2])-hy,dz=ab(px*w[0]+py*w[1]+pz*w[2])-hz;
+      return sq(MX(dx,0)**2+MX(dy,0)**2+MX(dz,0)**2)+MN(MX(dx,MX(dy,dz)),0)-rr;}});};
+  const segPlate=(p,b,r,l)=>{       /* a flat lame on the back of a finger segment */
+    const d=[b[0]-p[0],b[1]-p[1],b[2]-p[2]],L=sq(d[0]*d[0]+d[1]*d[1]+d[2]*d[2]);d[0]/=L;d[1]/=L;d[2]/=L;
+    let bk=[-d[1],d[0],0];{const n=sq(bk[0]*bk[0]+bk[1]*bk[1])||1;bk=[bk[0]/n,bk[1]/n,0];}
+    const w=[d[1]*bk[2]-d[2]*bk[1],d[2]*bk[0]-d[0]*bk[2],d[0]*bk[1]-d[1]*bk[0]];
+    const m=[(p[0]+b[0])/2+bk[0]*r*.5,(p[1]+b[1])/2+bk[1]*r*.5,(p[2]+b[2])/2+bk[2]*r*.5];
+    obox(m,d,bk,w,[L*.46,r*.5,r*.98],r*.3,.002);};
+  const cuff=(x,y,z)=>{const t=MN(1,MX(0,(y+.004)/.07)),rx=.044+.01*t*t,rz=.05+.01*t*t,e=sq((x/rx)**2+(z/rz)**2);
+    return MX((e-1)*MN(rx,rz),ab(y-.03)-.034);};
+  prims.push({c:[0,.03,0],r:.1,k:.006,f:cuff});
+  rbox([-.002,-.056,0],[.021,.052,.05],.016,.016);                 /* palm + back */
+  rbox([.018,-.052,.001],[.009,.034,.044],.008,.006);              /* the back plate */
+  rbox([.023,-.028,.001],[.005,.012,.04],.004,.003);               /* its upper lame */
+  cap([.016,-.101,-.047],[.016,-.101,.047],.013,.013,.008);        /* knuckle guard */
+  const FZ=[.036,.012,-.012,-.036],FK=[1,1.08,1,.84],claws=[],joints=[];
+  const rotX=(v,a)=>{const c=Math.cos(a),s=Math.sin(a);return [v[0]*c-v[1]*s,v[0]*s+v[1]*c,v[2]];};   /* curl toward the palm (-x) */
+  FZ.forEach((fz,i)=>{
+    let p=[.002,-.106,fz],d=[0,-1,fz*2.2];{const l=sq(d[0]*d[0]+d[1]*d[1]+d[2]*d[2]);d=d.map(v=>v/l);}
+    let r=.0112;
+    sph([.013,-.104,fz],.0145,.006);                                 /* knuckle plate */
+    [.054,.042,.034].forEach((l,j)=>{
+      d=rotX(d,-(.2+j*.22+(i===3?.08:0)+i*.03));
+      const b=[p[0]+d[0]*l*FK[i],p[1]+d[1]*l*FK[i],p[2]+d[2]*l*FK[i]];
+      cap(p,b,r*.92,r*.84,.002);segPlate(p,b,r,l*FK[i]);
+      joints.push(b);p=b;r*=.9;
+    });
+    d=rotX(d,-.34);
+    const tip=[p[0]+d[0]*.05,p[1]+d[1]*.05,p[2]+d[2]*.05];
+    cap(p,tip,r*.95,.0008,.003);claws.push(tip);
+  });
+  { /* the thumb, on the front */
+    let p=[-.008,-.034,.05],d=[-.3,-.55,.78];{const l=sq(d[0]*d[0]+d[1]*d[1]+d[2]*d[2]);d=d.map(v=>v/l);}
+    let r=.014;sph(p,.018,.01);
+    [.046,.036].forEach(l=>{d=[d[0]-.12,d[1]-.2,d[2]-.1];const n=sq(d[0]*d[0]+d[1]*d[1]+d[2]*d[2]);d=d.map(v=>v/n);
+      const b=[p[0]+d[0]*l,p[1]+d[1]*l,p[2]+d[2]*l];cap(p,b,r*.9,r*.8,.004);segPlate(p,b,r,l);joints.push(b);p=b;r*=.87;});
+    d=[d[0]-.2,d[1]-.25,d[2]-.1];{const n=sq(d[0]*d[0]+d[1]*d[1]+d[2]*d[2]);d=d.map(v=>v/n);}
+    const tip=[p[0]+d[0]*.04,p[1]+d[1]*.04,p[2]+d[2]*.04];cap(p,tip,r*.9,.0009,.003);claws.push(tip);
+  }
+  const n=prims.length;
+  const local=(x,y,z)=>{let dd=1e9;
+    for(let i=0;i<n;i++){const P=prims[i],dx=x-P.c[0],dy=y-P.c[1],dz=z-P.c[2],lb=sq(dx*dx+dy*dy+dz*dz)-P.r;
+      if(lb>dd+P.k)continue;const v=P.f(x,y,z),k=P.k;
+      if(k<=0){dd=MN(dd,v);}else{const h=k-ab(dd-v);dd=h>0?MN(dd,v)-h*h*.25/k:MN(dd,v);}}
+    return dd;};
+  const SC=H.s||1;
+  const f=(x,y,z)=>{const px=(x-W[0])/SC,py=(y-W[1])/SC,pz=(z-W[2])/SC;
+    return SC*local(px*Bk[0]+py*Bk[1]+pz*Bk[2],px*Up[0]+py*Up[1]+pz*Up[2],px*Th[0]+py*Th[1]+pz*Th[2]);};
+  /* world box of the local box */
+  const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];
+  for(const a of [-.085,.085])for(const b of [-.31,.09])for(const c of [-.09,.115]){
+    for(let j=0;j<3;j++){const v=W[j]+(Bk[j]*a+Up[j]*b+Th[j]*c)*SC;lo[j]=MN(lo[j],v);hi[j]=MX(hi[j],v);}}
+  const e=.0035,lap=(x,y,z)=>(f(x+e,y,z)+f(x-e,y,z)+f(x,y+e,z)+f(x,y-e,z)+f(x,y,z+e)+f(x,y,z-e)-6*f(x,y,z))/(e*e);
+  const n3=K.n3;
+  return {f,lo,hi,h:.0076*SC*q.h,ao:.014*SC,
+    col:function(x,y,z,nx,ny,nz,o){
+      const w=MX(0,MN(1,(lap(x,y,z)-40)/110));
+      let c=.1*(.8+.4*n3(x*40,y*40,z*40))+.46*w*w;
+      /* claws: pale horn-steel toward the tips */
+      for(let i=0;i<claws.length;i++){const t=claws[i],px=(x-W[0])/SC,py=(y-W[1])/SC,pz=(z-W[2])/SC;
+        const lx=px*Bk[0]+py*Bk[1]+pz*Bk[2],ly=px*Up[0]+py*Up[1]+pz*Up[2],lz=px*Th[0]+py*Th[1]+pz*Th[2];
+        const dd=sq((lx-t[0])**2+(ly-t[1])**2+(lz-t[2])**2);if(dd<.03)c=MX(c,.12+.38*(1-dd/.03));}
+      {const px=(x-W[0])/SC,py=(y-W[1])/SC,pz=(z-W[2])/SC,ly=px*Up[0]+py*Up[1]+pz*Up[2];if(ly>-.045)c*=1-.62*MN(1,(ly+.045)/.045);}   /* the cuff sits in the vambrace's shadow */
+      o[0]=c;o[1]=c*.98;o[2]=c*1.05;}};
+};
 B.armor=function(K,U,S){
   const V=K.V,g=new T.Group(),MOB=!!window.IS_MOBILE,t0=performance.now();
   const PI=Math.PI,abs=Math.abs,sin=Math.sin,cos=Math.cos,sqrt=Math.sqrt;
-  /* ---------- materials ---------- */
-  const steel=WB.skin(K,U,new T.MeshPhysicalMaterial({vertexColors:true,metalness:.78,roughness:.38,clearcoat:.35,clearcoatRoughness:.3,envMapIntensity:1.15}),{key:'wbSteel',
+  /* ---------- materials: dark, heavy steel whose worn edges catch the light ---------- */
+  const steel=WB.skin(K,U,new T.MeshPhysicalMaterial({vertexColors:true,metalness:.5,roughness:.58,clearcoat:.08,clearcoatRoughness:.55,envMapIntensity:.36}),{key:'wbSteel2',
     surf:'float _n=wbN(_wp*24.)*.6+wbN(_wp*67.)*.4;float _s=wbN(vec3(_wp.x*11.,_wp.y*150.,_wp.z*11.));diffuseColor.rgb*=.72+.56*_n;_wk=_n;_wh=(_n-.5)*.0007+(_s-.5)*.00025;',
-    rough:'roughnessFactor=clamp(roughnessFactor*(.7+.6*_wk),.12,1.);',out:WB.DESAT(.55)+WB.KNEE(.6,.45)});
+    rough:'roughnessFactor=clamp(roughnessFactor*(.75+.5*_wk),.36,1.);',out:WB.DESAT(.72)+WB.KNEE(.3,.26)});
   const cloth=WB.skin(K,U,new T.MeshPhysicalMaterial({vertexColors:true,roughness:.9,metalness:0,sheen:.7,sheenColor:new T.Color(0x3c3848),sheenRoughness:.55,envMapIntensity:.35}),{key:'wbCloth',
     surf:'float _n=wbN(_wp*55.);_wh=(_n-.5)*.001+sin(_wp.y*380.+_n*4.)*.00012;diffuseColor.rgb*=.85+.3*_n;',out:WB.DESAT(.5)});
   const pale=WB.skin(K,U,new T.MeshPhysicalMaterial({vertexColors:true,roughness:.52,metalness:0,clearcoat:.2,clearcoatRoughness:.45,sheen:.3,sheenColor:new T.Color(0xa498b4),envMapIntensity:.6}),{key:'wbPale',
     surf:'float _n=wbN(_wp*36.)*.55+wbN(_wp*92.)*.3+wbN(_wp*8.)*.15;float _c=wbN(vec3(_wp.x*14.,_wp.y*90.,_wp.z*14.));_wh=(_n-.5)*.0018+(_c-.5)*.0009;diffuseColor.rgb*=.88+.24*_n;',
     out:'outgoingLight*=smoothstep(.003,.045,max(vColor.r,max(vColor.g,vColor.b)));'+WB.DESAT(.55)+WB.KNEE(.7,.4)});
-  /* ---------- the torso profile shared by the sculpt and the plates ---------- */
+  /* ---------- the build: a barrel torso, shared by the sculpt and the plates ---------- */
   const PR={
-    pA:[[.96,.25],[1.08,.25],[1.18,.235],[1.26,.225],[1.36,.245],[1.48,.28],[1.6,.3],[1.7,.3],[1.78,.27],[1.87,.2]],
-    pB:[[.96,.17],[1.08,.17],[1.18,.16],[1.26,.155],[1.36,.165],[1.48,.185],[1.6,.2],[1.7,.195],[1.78,.175],[1.87,.14]],
-    pZ:[[.96,0],[1.18,0],[1.26,.005],[1.36,.01],[1.48,.02],[1.6,.025],[1.7,.02],[1.78,.01],[1.87,0]]};
+    pA:[[.95,.3],[1.05,.305],[1.15,.3],[1.24,.295],[1.34,.315],[1.44,.345],[1.54,.372],[1.64,.388],[1.72,.385],[1.8,.35],[1.87,.28],[1.93,.17]],
+    pB:[[.95,.215],[1.05,.215],[1.15,.21],[1.24,.205],[1.34,.215],[1.44,.235],[1.54,.256],[1.64,.266],[1.72,.26],[1.8,.24],[1.87,.2],[1.93,.14]],
+    pZ:[[.95,0],[1.24,0],[1.34,.008],[1.44,.018],[1.54,.026],[1.64,.026],[1.72,.018],[1.8,.008],[1.93,-.01]],
+    J:{S:[.48,1.725,-.01],E:[.565,1.36,-.03],W:[.605,1.02,.06]}};
   const kk=WB.kit(),tA=kk.tab(PR.pA),tB=kk.tab(PR.pB),tZ=kk.tab(PR.pZ);
   const torso=(p0,p1,lift)=>({F:(s,v,o)=>{const f=p0+(p1-p0)*s;o.set((tA(v)+lift)*sin(f),v,tZ(v)+(tB(v)+lift)*cos(f));},cen:(p,o)=>o.set(0,p.y,tZ(p.y))});
-  const skirt=(p0,p1,lift)=>({F:(s,v,o)=>{const f=p0+(p1-p0)*s,r=.265+(1.13-v)*.2+lift;o.set(r*sin(f),v,r*.8*cos(f));},cen:(p,o)=>o.set(0,p.y,0)});
+  const skirt=(p0,p1,lift)=>({F:(s,v,o)=>{const f=p0+(p1-p0)*s,r=.31+(1.14-v)*.2+lift;o.set(r*sin(f),v,r*.78*cos(f));},cen:(p,o)=>o.set(0,p.y,0)});
   const bat=(s,n,ph)=>sqrt(abs(sin(PI*(n*s+(ph||0)))));      /* 0 at a spike tip, 1 between: bat-wing scallops */
-  const steelC=[.2,.2,.215],altC=[.165,.164,.176],edgeC=[.8,.78,.84],darkC=[.1,.1,.11];
-  const soup=new WB.Soup();
-  const pl=(car,o)=>WB.plate(soup,Object.assign({col:steelC,edge:edgeC,side:[.3,.3,.32]},car,o));
-  const batch=[];                  /* plates are built over a few short tasks, so boot never blocks */
-  batch.push(()=>{
-  /* ---------- breastplate: a down-pointing shield with a keel ---------- */
-  pl(torso(-.82,.82,.04),{back:false,ns:30,nt:7,th:.017,bv:.007,
-    top:s=>1.76+.1*Math.pow(abs(2*s-1),1.4),bot:s=>1.42+.33*Math.pow(abs(2*s-1),1.1),
-    off:(s,t)=>.022*Math.max(0,1-abs(2*s-1)*5)+.008*t*t});
-  /* the upper chest flanks: jagged plates sweeping down and out from under the pauldrons */
-  [-1,1].forEach(sd=>pl(torso(sd>0?.55:-1.45,sd>0?1.45:-.55,.034),{back:false,ns:22,nt:5,th:.014,bv:.006,col:altC,
-    top:s=>1.82-.02*(sd>0?s:1-s),bot:s=>{const u=sd>0?s:1-s;return 1.56+.1*u-.07+.055*bat(u,3.5,.1);},off:(s,t)=>.012*t*t}));
-  /* chevron layers, each a jagged bat-wing edge, overlapping like scales */
+  const steelC=[.13,.13,.14],altC=[.105,.105,.115],lowC=[.085,.085,.094],edgeC=[.62,.6,.66],darkC=[.07,.07,.078],sideC=[.22,.22,.24];
+  const soup=new WB.Soup(),jobs=[];
+  const pl=(car,o)=>jobs.push(()=>WB.plate(soup,Object.assign({col:steelC,edge:edgeC,side:sideC,back:false},car,o)));
+  /* ---------- the breastplate: one broad shield from shoulder to shoulder, keeled, pointing down ---------- */
+  pl(torso(-1.42,1.42,.036),{ns:40,nt:7,th:.018,bv:.007,
+    top:s=>1.87+.05*Math.pow(abs(2*s-1),1.6),bot:s=>1.5+.32*Math.pow(abs(2*s-1),1.05)-.03*(1-bat(s,7,.5))*abs(2*s-1),
+    off:(s,t)=>.024*Math.max(0,1-abs(2*s-1)*4.5)+.01*t*t});
+  /* chevron layers below it, each with a jagged bat-wing edge, overlapping like scales */
   for(let k=0;k<4;k++){
-    const yc=1.49-k*.08;
-    pl(torso(-1.3,1.3,.03-k*.0062),{back:false,ns:44,nt:4,th:.013,bv:.005,col:k%2?steelC:altC,
-      top:s=>yc+.27*Math.pow(abs(2*s-1),1.25),bot:s=>yc+.27*Math.pow(abs(2*s-1),1.25)-.13+.058*bat(s,6),
-      off:(s,t)=>.018*t*t+.008*Math.max(0,1-abs(2*s-1)*6)});
+    const yc=1.535-k*.074;
+    pl(torso(-1.5,1.5,.03-k*.0045),{ns:48,nt:4,th:.014,bv:.005,col:k%2?steelC:altC,
+      top:s=>yc+.27*Math.pow(abs(2*s-1),1.25),bot:s=>yc+.27*Math.pow(abs(2*s-1),1.25)-.125+.052*bat(s,6),
+      off:(s,t)=>.02*t*t+.012*Math.max(0,1-abs(2*s-1)*5)});
   }
-  /* back plates (mostly under the cloak) */
-  pl(torso(PI-1.2,PI+1.2,.03),{back:false,ns:24,nt:5,th:.014,bv:.006,top:s=>1.84,bot:s=>1.42+.08*abs(2*s-1),off:(s,t)=>.008*t});
-  pl(torso(PI-1.25,PI+1.25,.022),{back:false,ns:24,nt:3,th:.012,bv:.005,top:s=>1.46,bot:s=>1.3-.03*bat(s,5),off:(s,t)=>.008*t});
-  /* the belt, its buckle-point and two angular side plates */
-  pl(torso(-PI,PI,.038),{back:false,ns:64,nt:2,th:.016,bv:.006,col:darkC,top:s=>1.238,bot:s=>1.125});
-  pl(torso(-.42,.42,.058),{back:false,ns:18,nt:5,th:.016,bv:.007,top:s=>1.262+.03*abs(2*s-1),bot:s=>1.02+.2*Math.pow(abs(2*s-1),.9),off:(s,t)=>.01*Math.max(0,1-abs(2*s-1)*5)});
-  [-1,1].forEach(sd=>pl(torso(sd>0?.5:-1.08,sd>0?1.08:-.5,.054),{back:false,ns:16,nt:3,th:.014,bv:.006,
-    top:s=>{const u=sd>0?s:1-s;return 1.25+.07*Math.max(0,1-abs(u-.75)*6);},bot:s=>{const u=sd>0?s:1-s;return 1.1+.04*bat(u,3,.0)-.03*(1-u);}}));
-  /* tassets over the robe: two tiers of long pointed plates, and the hips */
-  });
-  batch.push(()=>{
+  /* the back (mostly under the cloak) */
+  pl(torso(PI-1.35,PI+1.35,.03),{ns:26,nt:5,top:s=>1.86,bot:s=>1.42+.08*abs(2*s-1),off:(s,t)=>.008*t});
+  pl(torso(PI-1.4,PI+1.4,.022),{ns:26,nt:3,top:s=>1.46,bot:s=>1.27-.03*bat(s,5),off:(s,t)=>.008*t});
+  /* the heavy belt, its pointed buckle and angular hip plates */
+  pl(torso(-PI,PI,.042),{ns:72,nt:2,th:.02,bv:.007,col:darkC,top:s=>1.25,bot:s=>1.13});
+  pl(torso(-.34,.34,.066),{ns:18,nt:6,th:.02,bv:.008,top:s=>1.3+.035*abs(2*s-1),bot:s=>1.03+.21*Math.pow(abs(2*s-1),.85),
+    off:(s,t)=>.012*Math.max(0,1-abs(2*s-1)*4)});
+  [-1,1].forEach(sd=>pl(torso(sd>0?.42:-1.2,sd>0?1.2:-.42,.058),{ns:18,nt:3,th:.016,bv:.006,
+    top:s=>{const u=sd>0?s:1-s;return 1.27+.06*Math.max(0,1-abs(u-.7)*5);},bot:s=>{const u=sd>0?s:1-s;return 1.1+.04*bat(u,3)-.03*(1-u);}}));
+  /* tassets over the robe: long pointed plates in front, shorter at the hips and the back */
   [-1,1].forEach(sd=>{
-    const f0=sd>0?.1:-.78,f1=sd>0?.78:-.1;
-    pl(skirt(f0,f1,.035),{back:false,ns:14,nt:8,th:.015,bv:.006,top:s=>1.14,bot:s=>.78+.2*Math.pow(abs(2*s-1),1.4),off:(s,t)=>.01*Math.max(0,1-abs(2*s-1)*5)+.01*t});
-    pl(skirt(sd>0?.16:-.66,sd>0?.66:-.16,.022),{back:false,ns:12,nt:8,th:.013,bv:.006,top:s=>.9,bot:s=>.5+.22*Math.pow(abs(2*s-1),1.3),off:(s,t)=>.008*Math.max(0,1-abs(2*s-1)*5)});
-    pl(skirt(sd>0?.85:-1.55,sd>0?1.55:-.85,.03),{back:false,ns:12,nt:5,th:.013,bv:.006,top:s=>1.13,bot:s=>.86+.05*bat(s,3)});
+    pl(skirt(sd>0?.06:-.74,sd>0?.74:-.06,.04),{ns:16,nt:8,th:.016,bv:.006,col:lowC,top:s=>1.15,bot:s=>.74+.18*Math.pow(abs(2*s-1),1.4),
+      off:(s,t)=>.012*Math.max(0,1-abs(2*s-1)*4.5)+.012*t});
+    pl(skirt(sd>0?.12:-.62,sd>0?.62:-.12,.025),{ns:12,nt:8,th:.013,bv:.006,col:darkC,top:s=>.93,bot:s=>.52+.2*Math.pow(abs(2*s-1),1.3),
+      off:(s,t)=>.008*Math.max(0,1-abs(2*s-1)*4.5)});
+    pl(skirt(sd>0?.8:-1.6,sd>0?1.6:-.8,.034),{ns:14,nt:5,th:.014,bv:.006,top:s=>1.14,bot:s=>.84+.06*bat(s,3)});
   });
+  pl(skirt(PI-.75,PI+.75,.03),{ns:14,nt:4,th:.013,bv:.006,col:altC,top:s=>1.14,bot:s=>.9+.04*bat(s,4)});
+  /* ---------- pauldrons: a dome that hugs the shoulder and three jagged lames beneath it ---------- */
+  [-1,1].forEach(sd=>{
+    const C=V(sd*.5,1.775,-.012),Ax=V(sd*.44,1,0).normalize(),E1=V(sd,-.44,0).normalize(),E2=V(0,0,1);
+    const car=(R,ps0,ps1,v0,fl)=>({F:(s,v,o)=>{const ps=ps0+(ps1-ps0)*s,rho=R*(1+fl*Math.max(0,v-v0));
+      o.copy(C).addScaledVector(Ax,rho*cos(v)).addScaledVector(E1,rho*sin(v)*cos(ps)).addScaledVector(E2,rho*sin(v)*sin(ps));},cen:(p,o)=>o.copy(C)});
+    for(let k=2;k>=0;k--){
+      const v0=[.82,1.2,1.56][k],v1=[1.38,1.76,2.12][k],R=.24-.006*k,amp=[.26,.28,.3][k];
+      pl(car(R,-2.25,2.25,v0,.2),{ns:44,nt:4,th:.016,bv:.006,col:k%2?altC:steelC,top:s=>v0,bot:s=>v1-amp*bat(s,5,.1)+.04*abs(2*s-1),
+        off:(s,t)=>.02*t*t});
+    }
+    pl(car(.25,-PI,PI,0,0),{ns:48,nt:6,th:.02,bv:.008,top:s=>.02,bot:s=>1.04-.2*bat(s,6,.1),off:(s,t)=>.012*t*t});   /* the dome */
+    /* a raised crest-ridge along the top of the dome */
+    pl(car(.265,-.22,.22,0,0),{ns:6,nt:10,th:.012,bv:.005,col:altC,top:s=>.05,bot:s=>.98,off:(s,t)=>.014*sin(PI*s)});
   });
-  /* ---------- pauldrons: four flaring bat-wing lames each side ---------- */
-  [-1,1].forEach(sd=>batch.push(()=>{
-    const C=V(sd*.39,1.775,-.02),Ax=V(sd*.7,1,0).normalize(),E1=V(sd*1,-.7,0).normalize(),E2=V(0,0,1);
-    for(let k=3;k>=0;k--){
-      const th0=[.1,.55,.9,1.25][k],th1=[.75,1.1,1.45,1.8][k],amp=[.26,.32,.38,.44][k],R0=.24-k*.013;
-      const car={F:(s,v,o)=>{const ps=-1.85+3.7*s,rho=R0*(1+.3*v*v);o.copy(C).addScaledVector(Ax,rho*cos(v)).addScaledVector(E1,rho*sin(v)*cos(ps)).addScaledVector(E2,rho*sin(v)*sin(ps));},
-                 cen:(p,o)=>o.copy(C)};
-      pl(car,{ns:36,nt:5,th:.015,bv:.006,col:k%2?altC:steelC,
-        top:s=>th0,bot:s=>th1+amp*(1-bat(s,4.5,.25)),off:(s,t)=>.035*t*t*t});
-    }
-    /* arm: shoulder -> elbow -> wrist */
-    const Sh=V(sd*.37,1.735,-.012),El=V(sd*.45,1.36,0),Wr=V(sd*.49,1.0,.1);
-    const band=(A0,A1,v0,v1,r0,r1,o)=>{const D=A1.clone().sub(A0).normalize(),e1=V(0,0,1).addScaledVector(D,-D.z).normalize(),e2=new T.Vector3().crossVectors(D,e1);
-      return {F:(s,v,out)=>{const f=2*PI*s,t=(v-v0)/(v1-v0),r=r0+(r1-r0)*t;out.copy(A0).addScaledVector(D,v).addScaledVector(e1,r*cos(f)).addScaledVector(e2,r*sin(f));},
-              cen:(p,out)=>{const v=out.subVectors(p,A0).dot(D);out.copy(A0).addScaledVector(D,v);}};};
-    const Lu=Sh.distanceTo(El);
-    for(let k=0;k<3;k++){const v0=.1+k*.085,v1=v0+.11;pl(band(Sh,El,v0,v1,.095+(2-k)*.006,.112+(2-k)*.006),{back:false,ns:28,nt:3,th:.011,bv:.005,top:s=>v0,bot:s=>v1+.012*(1-bat(s,3))});}
-    /* couter: a pointed cap on the elbow */
-    {const Ac=V(sd*.55,-.25,-1).normalize(),e1=V(0,1,0).addScaledVector(Ac,-Ac.y).normalize(),e2=new T.Vector3().crossVectors(Ac,e1);
-     pl({F:(s,v,o)=>{const f=2*PI*s,rho=.095*(1+.3*v);o.copy(El).addScaledVector(Ac,rho*cos(v)).addScaledVector(e1,rho*sin(v)*cos(f)).addScaledVector(e2,rho*sin(v)*sin(f));},cen:(p,o)=>o.copy(El)},
-       {ns:30,nt:5,th:.012,bv:.005,top:s=>.12,bot:s=>1.1+.45*(1-bat(s,3,.17))});}
-    /* vambrace, cuff, and the blade-fin on the outer forearm */
-    const Lf=El.distanceTo(Wr);
-    pl(band(El,Wr,.05,Lf-.06,.086,.074),{back:false,ns:28,nt:6,th:.012,bv:.005,top:s=>.05,bot:s=>Lf-.06+.02*(1-bat(s,2))});
-    pl(band(El,Wr,Lf-.075,Lf+.035,.074,.094),{back:false,ns:28,nt:3,th:.011,bv:.005,col:darkC,top:s=>Lf-.075,bot:s=>Lf+.035});
-    {const D=Wr.clone().sub(El).normalize(),O=V(sd,0,0).addScaledVector(D,-D.x*sd).normalize(),Nf=new T.Vector3().crossVectors(D,O).normalize();
-     pl({F:(s,v,o)=>{o.copy(El).addScaledVector(D,.07+.22*s).addScaledVector(O,.082+v);},cen:(p,o)=>o.copy(p).addScaledVector(Nf,-1)},
-       {ns:24,nt:4,th:.008,bv:.004,top:s=>0,bot:s=>.012+.05*Math.pow(sin(PI*Math.min(1,s*1.1)),.8)*(.55+.45*bat(s,3,.1))});}
-    /* gauntlet: palm, back plate, segmented fingers ending in claws */
-    const Dh=V(sd*.05,-1,.12).normalize(),Ob=V(sd,0,0).addScaledVector(Dh,-Dh.x*sd).normalize(),Kx=new T.Vector3().crossVectors(Dh,Ob).multiplyScalar(sd).normalize();
-    const H0=Wr.clone().addScaledVector(Dh,.03);
-    const pm=new T.Matrix4().makeBasis(Ob,Dh,Kx).setPosition(H0.clone().addScaledVector(Dh,.045).addScaledVector(Ob,-.006));
-    soup.add(K.organic(new T.SphereGeometry(1,16,12).scale(.032,.062,.056),.003,30,sd),darkC,pm);
-    {const hp=band(H0,H0.clone().addScaledVector(Dh,.1),0,.1,.046,.05);   /* back of the hand */
-     pl({F:(s,v,o)=>hp.F(.1+s*.3*(sd>0?1:1),v,o),cen:hp.cen},{back:false,ns:10,nt:4,th:.009,bv:.004,top:s=>.005,bot:s=>.075+.012*(1-bat(s,2))});}
-    const up=new T.Vector3(),seg=(a,b,r0,r1,col)=>{const d=b.clone().sub(a),L=d.length();const cg=new T.CylinderGeometry(r1,r0,L,7,1);cg.translate(0,L/2,0);
-      soup.add(cg,col,new T.Matrix4().compose(a,new T.Quaternion().setFromUnitVectors(up.set(0,1,0),d.normalize()),V(1,1,1)));};
-    const kg=new T.SphereGeometry(1,8,6).toNonIndexed(),knuck=(p,r)=>soup.add(kg,steelC,new T.Matrix4().compose(p,new T.Quaternion(),V(r,r,r)));
-    for(let i=0;i<5;i++){
-      const thumb=i===4;
-      let p=thumb?H0.clone().addScaledVector(Dh,.035).addScaledVector(Kx,.034).addScaledVector(Ob,-.012)
-                 :H0.clone().addScaledVector(Dh,.1).addScaledVector(Kx,.03-i*.021).addScaledVector(Ob,.004);
-      let d=thumb?Dh.clone().addScaledVector(Kx,.9).addScaledVector(Ob,-.5).normalize():Dh.clone().addScaledVector(Kx,(.5-i*.33)*.25).normalize();
-      const ls=thumb?[.05,.04]:[.064,.046,.038].map(x=>x*(1-abs(i-1.2)*.07));
-      const axis=thumb?Dh.clone().negate():Kx.clone().multiplyScalar(-1);
-      let r=thumb?.019:.0175;
-      ls.forEach((L,j)=>{knuck(p,r*1.08);d.applyAxisAngle(axis,thumb?-.25:.22+j*.18+(i*.05));const q2=p.clone().addScaledVector(d,L);seg(p,q2,r,r*.88,j%2?steelC:altC);p=q2;r*=.86;});
-      d.applyAxisAngle(axis,thumb?-.2:.3);
-      const cl=new T.ConeGeometry(r*.95,.05,6);cl.translate(0,.025,0);
-      soup.add(cl,[.4,.39,.42],new T.Matrix4().compose(p,new T.Quaternion().setFromUnitVectors(up.set(0,1,0),d),V(1,1,1)));
-    }
-  }));
+  /* ---------- arms: elbow cops and heavy vambraces with a jagged flare at the elbow ---------- */
+  const band=(A0,A1,v0,v1,r0,r1)=>{const D=A1.clone().sub(A0).normalize(),e1=V(0,0,1).addScaledVector(D,-D.z).normalize(),e2=new T.Vector3().crossVectors(D,e1);
+    return {D,e1,e2,F:(s,v,out)=>{const f=2*PI*s,t=(v-v0)/(v1-v0),r=r0+(r1-r0)*t;out.copy(A0).addScaledVector(D,v).addScaledVector(e1,r*cos(f)).addScaledVector(e2,r*sin(f));},
+            cen:(p,out)=>{const v=out.subVectors(p,A0).dot(D);out.copy(A0).addScaledVector(D,v);}};};
+  const J=PR.J;
+  [-1,1].forEach(sd=>{
+    const El=V(sd*J.E[0],J.E[1],J.E[2]),Wr=V(sd*J.W[0],J.W[1],J.W[2]),Lf=El.distanceTo(Wr);
+    /* couter: a domed cap on the back of the elbow, drawn out to a point */
+    {const Ac=V(sd*.45,-.1,-1).normalize(),e1=V(0,1,0).addScaledVector(Ac,-Ac.y).normalize(),e2=new T.Vector3().crossVectors(Ac,e1);
+     pl({F:(s,v,o)=>{const f=2*PI*s,rho=.1*(1+.25*v);o.copy(El).addScaledVector(Ac,rho*cos(v)).addScaledVector(e1,rho*sin(v)*cos(f)).addScaledVector(e2,rho*sin(v)*sin(f));},cen:(p,o)=>o.copy(El)},
+       {ns:32,nt:5,th:.014,bv:.006,top:s=>.1,bot:s=>1.15+.5*(1-bat(s,3,.17))});
+     const sp=new T.ConeGeometry(.022,.1,6);sp.translate(0,.05,0);
+     jobs.push(()=>soup.add(sp,altC,new T.Matrix4().compose(El.clone().addScaledVector(Ac,.1),new T.Quaternion().setFromUnitVectors(V(0,1,0),Ac.clone().add(V(0,-.25,0)).normalize()),V(1,1,1))));}
+    /* the vambrace: the outer side sweeps up past the elbow into jagged points */
+    const bd=band(El,Wr,0,Lf,.1,.084),O=V(sd,0,0),fo=Math.atan2(O.dot(bd.e2),O.dot(bd.e1));
+    const fin=s=>{const c=cos(2*PI*s-fo);return c>0?Math.pow(c,3):0;};
+    pl(bd,{ns:56,nt:6,th:.016,bv:.006,back:true,top:s=>.07-.2*fin(s)*(1-.55*bat(s,7,.1)),bot:s=>Lf-.02,off:(s,t)=>.006*t+.012*fin(s)*(1-t)});
+    pl(band(El,Wr,0,Lf,.108,.092),{ns:40,nt:2,th:.013,bv:.005,col:darkC,top:s=>.1,bot:s=>.14});
+  });
+  /* the plates go together in idle slices; one draw call */
   const armour=new T.Mesh(new T.BufferGeometry(),steel);armour.frustumCulled=false;g.add(armour);
-  const relP=K.hold?K.hold():()=>{};
-  const next=()=>{const b=batch.shift();if(b){b();setTimeout(next,0);return;}armour.geometry.dispose();armour.geometry=soup.geo();armour.frustumCulled=true;relP();
+  const finish=()=>{const k=soup.n*3,G=new T.BufferGeometry();          /* views, no copies: this slice stays short */
+    G.setAttribute('position',new T.BufferAttribute(soup.P.subarray(0,k),3));G.setAttribute('normal',new T.BufferAttribute(soup.N.subarray(0,k),3));
+    G.setAttribute('color',new T.BufferAttribute(soup.C.subarray(0,k),3));G.boundingSphere=new T.Sphere(V(0,1.3,0),1.45);
+    armour.geometry.dispose();armour.geometry=G;armour.frustumCulled=true;
     try{performance.measure('kz-armor-plates',{start:t0,end:performance.now()});}catch(e){}};
-  setTimeout(next,0);
-  /* ---------- robe to the ground with deep folds ---------- */
-  const robe=K.robe([[.235,1.2],[.25,1.1],[.28,.8],[.33,.4],[.39,.08],[.41,0]],U,{color:0x0d0c11,sway:.045,tear:.05,segs:72});
-  K.deform(robe.geometry,v=>{const a=Math.atan2(v.x,v.z),r=Math.hypot(v.x,v.z),k=Math.max(0,Math.min(1,(1.2-v.y)/1.2));
-    const rr=r*(1+(.06*sin(a*9+.5)+.035*sin(a*17+2)+.02*sin(a*29))*(.25+.75*k));v.x=sin(a)*rr;v.z=cos(a)*rr;});
-  robe.scale.z=.8;g.add(robe);
-  /* ---------- the cloak: wraps behind the shoulders, falls to the ground, torn to strips ---------- */
+  if(K.later)K.later((function*(){for(const j of jobs){j();yield;}finish();})());
+  else{const rel=K.hold?K.hold():()=>{};const next=()=>{const j=jobs.shift();if(j){j();setTimeout(next,0);return;}finish();rel();};setTimeout(next,0);}
+  /* ---------- the robe: open at the front over armoured legs, a tabard between them ---------- */
+  const fold=v=>{const a=Math.atan2(v.x,v.z),r=Math.hypot(v.x,v.z),k=Math.max(0,Math.min(1,(1.18-v.y)/1.18));
+    const rr=r*(1+(.06*sin(a*9+.5)+.035*sin(a*17+2)+.02*sin(a*29))*(.25+.75*k));v.x=sin(a)*rr;v.z=cos(a)*rr;};
+  const skirtR=K.robe([[.3,1.18],[.33,1.0],[.4,.68],[.47,.34],[.53,.05],[.54,0]],U,{color:0x0c0b10,sway:.04,tear:.06,segs:60,phi0:.6,phiLen:2*PI-1.2});
+  K.deform(skirtR.geometry,fold);skirtR.scale.z=.8;skirtR.material.color.set(0x1d1a24);g.add(skirtR);
+  const tabard=K.robe([[.31,1.16],[.35,.9],[.41,.5],[.45,.06],[.455,0]],U,{color:0x0c0b10,sway:.03,tear:.1,segs:18,phi0:-.42,phiLen:.84});
+  K.deform(tabard.geometry,fold);tabard.scale.z=.82;tabard.material.color.set(0x1d1a24);g.add(tabard);
+  /* ---------- the cloak: from the shoulders to the ground, wrapped round his back, torn to strips ---------- */
   {
-    const cg=new T.PlaneGeometry(2,1,28,40);cg.translate(0,.5,0);
+    const cg=new T.PlaneGeometry(2,1,30,44);cg.translate(0,.5,0);
     const cm=new T.MeshPhysicalMaterial({color:0x0b0a0f,roughness:.88,metalness:0,sheen:.8,sheenColor:new T.Color(0x34304a),sheenRoughness:.6,side:T.DoubleSide,envMapIntensity:.3});
     K.reveal(cm,U,sh=>{
       const fn=`vec3 wbCloak(vec2 q){float u=q.x,v=q.y,t=uKzTime;
-        vec3 p=vec3(u*(.36+.5*v+.06*v*v),1.8-v*1.82,-.13-.14*(1.-u*u)-.18*v*v);
-        p.z+=.034*sin(u*11.+v*1.7)*(.25+v)+.018*sin(u*23.-v*3.)*v;
-        p.x+=.05*v*v*sin(t*.7+v*3.+u*1.7);
-        p.z+=v*v*(.05*sin(t*.9+u*3.+v*4.)+.03*sin(t*1.7-u*5.+v*7.)-.05);
+        float a=u*(1.5+.28*v),rx=.43+.4*v+.04*v*v,rz=.27+.3*v;
+        float f=.035*sin(u*13.+v*1.7)*(.25+v)+.016*sin(u*27.-v*3.)*v;
+        vec3 p=vec3(sin(a)*(rx+f),1.94-v*1.94,-cos(a)*(rz+f)-.03);
+        p.x+=.04*v*v*sin(t*.7+v*3.+u*1.7);
+        p.z-=v*v*(.05+.04*sin(t*.9+u*3.+v*4.)+.025*sin(t*1.7-u*5.+v*7.));
         return p;}`;
       sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec2 vCq;\n'+fn)
         .replace('#include <beginnormal_vertex>',`vec3 _p0=wbCloak(position.xy),_pu=wbCloak(position.xy+vec2(.01,0.)),_pv=wbCloak(position.xy+vec2(0.,.01));
@@ -9057,30 +9262,37 @@ B.armor=function(K,U,S){
       sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec2 vCq;\nfloat wbHs(float x){return fract(sin(x*91.7)*437.5);}')
         .replace('#include <clipping_planes_fragment>',`#include <clipping_planes_fragment>
           {float u=vCq.x,v=vCq.y,cell=floor((u+1.)*13.),f=fract((u+1.)*13.);
-           float torn=1.-(.03+.16*wbHs(cell)+.05*sin(u*41.));
+           float torn=1.-(.02+.12*wbHs(cell)+.04*sin(u*41.));
            if(v>torn)discard;
            float slit=smoothstep(.6,.95,v)*step(.55,wbHs(cell+7.));
            if(slit>0.&&abs(f-.5)<.09+.2*(v-.6)&&v>.62+.25*wbHs(cell+3.))discard;
-           if(abs(u)>1.-.12*smoothstep(.3,1.,v)*wbHs(floor(v*23.)))discard;}`)
+           if(abs(u)>1.-.1*smoothstep(.3,1.,v)*wbHs(floor(v*23.)))discard;}`)
         .replace('#include <color_fragment>','#include <color_fragment>\nif(!gl_FrontFacing)diffuseColor.rgb=vec3(.02,.016,.026);');
-    },'wbCloak');
+    },'wbCloak2');
     const cloak=new T.Mesh(cg,cm);cloak.frustumCulled=false;g.add(cloak);
   }
   /* ---------- the head: pale, smooth, a hammer brim, two holes and a grin ---------- */
-  const head=new T.Group();head.position.set(0,1.93,.022);head.scale.setScalar(1.17);g.add(head);
+  const head=new T.Group();head.position.set(0,1.915,.035);head.scale.setScalar(1.26);g.add(head);
   const plug=K.shaderMat(U,{uniforms:{uV:{value:new T.Color(S.glow)},uI:{value:.35}},fHead:'uniform vec3 uV;uniform float uI;',
     fBody:'float f=pow(max(0.,dot(normalize(vN),normalize(vVd))),10.);col=vec4(uV*f*uI,1.);'});
   const plugM=new T.Mesh(new T.SphereGeometry(1,28,18),plug);plugM.position.set(0,.238,.064);plugM.scale.set(.094,.074,.034);head.add(plugM);
   const glints=[-1,1].map(s=>{const e=new T.Mesh(new T.SphereGeometry(.0062,10,8),K.shaderMat(U,{uniforms:{uV:plug.uniforms.uV,uI:{value:1}},fHead:'uniform vec3 uV;uniform float uI;',fBody:'col=vec4(uV*uI*1.6,1.);'}));
     e.position.set(s*.052,.382,.078);head.add(e);return e;});
   [-1,1].forEach(s=>{const b=new T.Mesh(new T.SphereGeometry(.02,12,10),K.reveal(new T.MeshBasicMaterial({color:0}),U));b.position.set(s*.052,.382,.074);b.scale.set(1,1.1,.7);head.add(b);});
+  /* ---------- the gauntlets hang at his sides: palms to the thighs, thumbs in front, claws down ---------- */
+  const hand={W:J.W.slice(),s:1.55};
+  {const D=V(.03,-1,.2).normalize(),Np=V(-1,0,-.7);Np.addScaledVector(D,-Np.dot(D)).normalize();
+   const Bk=Np.clone().negate(),Up=D.clone().negate(),Th=new T.Vector3().crossVectors(Bk,Up).normalize();
+   hand.Bk=Bk.toArray();hand.Up=Up.toArray();hand.Th=Th.toArray();}
   /* ---------- sculpted parts arrive from the mesher ---------- */
-  const Q=Object.assign({h:MOB?1.4:1},PR);
-  WB.build(['armorHead','armorCowl','armorBody'],Q,(n,r)=>{
+  const Q=Object.assign({h:MOB?1.4:1,hand,cowlBack:.17},PR);
+  WB.build(['armorHead','armorCowl','armorBody','armorHand','armorLegs'],Q,(n,r)=>{
     if(!r)return;
-    const m=new T.Mesh(WB.geo(r),n==='armorHead'?pale:cloth);
-    (n==='armorHead'?head:g).add(m);
-    if(n==='armorHead')try{performance.measure('kz-armor-mesh',{start:t0,end:performance.now()});}catch(e){}
+    const geo=WB.geo(r);
+    if(n==='armorHead'){head.add(new T.Mesh(geo,pale));try{performance.measure('kz-armor-mesh',{start:t0,end:performance.now()});}catch(e){}}
+    else if(n==='armorCowl'){const m=new T.Mesh(geo,cloth);m.scale.set(1.34,1.02,1.3);m.position.set(0,-.045,.005);g.add(m);}
+    else if(n==='armorHand'){g.add(new T.Mesh(geo,steel));const m=new T.Mesh(geo,steel);m.scale.x=-1;g.add(m);}   /* the mirror image is his right hand */
+    else g.add(new T.Mesh(geo,n==='armorLegs'?steel:cloth));
   });
   /* ---------- light flowing into him; his whisper orbiting ---------- */
   const inflow=K.motes(MOB?50:90,U,{color:0xd8d0ff,k:1.1,size:22,area:[2.2,3,2.2],y0:0,speed:.1,swirl:.2});
@@ -9089,7 +9301,7 @@ B.armor=function(K,U,S){
   const ws=K.words(['أنت وحدك هنا','you are alone here','…وحدك','alone'],S.glow,U);ws.forEach(w=>{w.scale.set(1.35,.25,1);g.add(w);});
   try{performance.measure('kz-armor-build',{start:t0,end:performance.now()});}catch(e){}
   const hw=new T.Vector3();
-  const R={g,frame:{dist:4.75,y:.95,look:[0,1.42,0]},
+  const R={g,frame:{dist:5.05,y:.95,look:[0,1.38,0]},
     update(t,dt,cam){
       head.getWorldPosition(hw);
       const want=Math.atan2(cam.position.x-hw.x,cam.position.z-hw.z);
@@ -9098,7 +9310,7 @@ B.armor=function(K,U,S){
       head.rotation.x=-.04+.03*sin(t*.4);
       const w=.5+.5*sin(t*.6);plug.uniforms.uI.value=.06+.14*w;glints.forEach(e=>e.material.uniforms.uI.value=.35+.8*w);
       const cl=Math.hypot(cam.position.x,cam.position.z)||1,cx=cam.position.x/cl,cz=cam.position.z/cl;
-      ws.forEach((s,i)=>{const a=t*.2+i*PI/2,x=cos(a),z=sin(a);s.position.set(x*1.35,2.05+sin(t*.5+i)*.22,z*1.35);
+      ws.forEach((s,i)=>{const a=t*.2+i*PI/2,x=cos(a),z=sin(a);s.position.set(x*1.45,2.1+sin(t*.5+i)*.22,z*1.45);
         const front=x*cx+z*cz;                         /* never drift across his face */
         s.material.opacity=Math.max(0,sin(t*.55+i*1.7))*.42*U.uKzReveal.value*Math.min(1,Math.max(0,(.55-front)/.45));});
     }};
@@ -13213,7 +13425,7 @@ B.god=function(K,U,S){
   const plateM=metal({clearcoat:.4,clearcoatRoughness:.24}),legM=metal({metalness:.7,roughness:.4,clearcoat:.3,clearcoatRoughness:.3,envMapIntensity:1.1}),boneM=metal({metalness:.62,roughness:.3,clearcoat:.8,envMapIntensity:1.4});
   const rootM=metal({metalness:.5,roughness:.46,clearcoat:.2,clearcoatRoughness:.45,envMapIntensity:1.1}),dustM=metal({metalness:.12,roughness:.52,clearcoat:.25,envMapIntensity:.8});
   /* starved skin, slick and streaked; veins round the core burn on every beat */
-  const fleshM=K.reveal(new T.MeshPhysicalMaterial({color:0xffffff,vertexColors:true,metalness:.3,roughness:.4,clearcoat:.75,clearcoatRoughness:.24,envMapIntensity:1.15}),U,sh=>{
+  const fleshM=K.reveal(new T.MeshPhysicalMaterial({color:0xffffff,vertexColors:true,metalness:.3,roughness:.42,clearcoat:.6,clearcoatRoughness:.3,envMapIntensity:1.15}),U,sh=>{
     sh.uniforms.uCoreW=coreW;
     sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vFp;')
       .replace('#include <begin_vertex>','#include <begin_vertex>\nvFp=position;');
@@ -13291,8 +13503,8 @@ B.god=function(K,U,S){
     arr.push(SK.tube([a.clone().addScaledVector(d0,-r*.8),a,p1,p2,p3],u=>r*Math.pow(1-u,.85)+.0015,lo?6:MOB?7:9,lo?4:MOB?5:6));};
 
   /* ================= the crawler: frames along its spine ================= */
-  /* the spine runs from the head (front, left of centre, low) back and to the right into a tail */
-  const CP=[[-.58,.22,1.46],[-.45,.41,1.08],[-.27,.55,.62],[-.07,.6,.12],[.12,.59,-.38],[.29,.54,-.86],[.42,.46,-1.28],[.51,.37,-1.66],[.55,.26,-1.97],[.54,.13,-2.2]];
+  /* the spine runs from a low armoured front (the torso rises just behind it) back, curving right, into a tail */
+  const CP=[[-.1,.2,1.3],[-.09,.47,1.1],[-.07,.64,.7],[0,.68,.2],[.1,.66,-.3],[.24,.62,-.78],[.38,.55,-1.22],[.5,.47,-1.6],[.58,.39,-1.93],[.62,.33,-2.18]];
   const path=new T.CatmullRomCurve3(CP.map(v3),false,'centripetal');
   const NS=200,FP=new Float32Array((NS+1)*12);    /* p, t, side, up per sample */
   {const t_=new T.Vector3(),s_=new T.Vector3(),u_=new T.Vector3(),p_=new T.Vector3();
@@ -13304,39 +13516,39 @@ B.god=function(K,U,S){
     for(let k=0;k<12;k++)o[k]=FP[a+k]+(FP[b+k]-FP[a+k])*w;
     for(let k=3;k<12;k+=3){const l=Math.hypot(o[k],o[k+1],o[k+2])||1;o[k]/=l;o[k+1]/=l;o[k+2]/=l;}return o;};
   const FR=u=>{const o=FRi(u);return {p:V(o[0],o[1],o[2]),t:V(o[3],o[4],o[5]),sd:V(o[6],o[7],o[8]),up:V(o[9],o[10],o[11])};};
-  const AW=u=>.66*(.82+.18*ss(0,.22,u))*(1-.68*Math.pow(ss(.45,1,u),1.1)),BH=u=>AW(u)*.8;
+  const AW=u=>.76*(.78+.22*ss(0,.2,u))*(1-.62*Math.pow(ss(.5,1,u),1.1)),BH=u=>AW(u)*.72;
   /* ground under the creature: the dais top (y 0) and the floor round it (y -.24) */
   const groundY=(x,z)=>{const r=sq(x*x+z*z);return r<1.64?0:r<1.8?-.05*(r-1.64)/.16:r<1.86?-.05-.12*(r-1.8)/.06:-.24;};
   const crawl=new T.Group();g.add(crawl);
-  const PU=[0,.075,.14,.205,.275,.345,.42,.495,.57,.645,.72,.795,.87,.935,.985];
+  const PU=[0,.035,.085,.14,.2,.265,.335,.405,.475,.545,.615,.685,.755,.825,.895,.965];
   const plateInfo=PU.slice(0,-1).map((ua,k)=>{const ub=PU[k+1];return {ua:k===0?0:ua-.42*(ub-ua),ub,head:k===0,tail:k===PU.length-2};});
-  const shellK=(pi,s)=>(pi.head?Math.pow(sq(MX(0,1-Math.pow(1-MN(1,s/.8),2))),.8)*1.06:1)*(pi.tail?1-.4*s:1);
+  const shellK=(pi,s)=>(pi.head?Math.pow(sq(MX(0,1-Math.pow(1-MN(1,s/.9),2))),.7)*1.04:1)*(pi.tail?1-.4*s:1);
   /* a point on a plate's outer shell (for thorns); s along it, th round it */
   const onPlate=(k,s,th,lift)=>{const pi=plateInfo[k],u=MN(1,pi.ua+(pi.ub-pi.ua)*s),F=FR(u),r=shellK(pi,s)*(1+(lift||0));
-    const a=AW(u)*r,b=BH(u)*r+.032*Math.exp(-th*th/.03);
+    const a=AW(u)*r,b=BH(u)*r+.04*Math.exp(-th*th/.03);
     const p=F.p.clone().addScaledVector(F.sd,a*Math.sin(th)).addScaledVector(F.up,b*Math.cos(th));
     const n=F.sd.clone().multiplyScalar(Math.sin(th)/MX(.1,a)).addScaledVector(F.up,Math.cos(th)/MX(.1,b)).normalize();
     return {p,n,F};};
 
   /* ================= the torso (skeleton now, flesh in idle slices) ================= */
   /* torso-local: origin where it grows out of the plates, facing +z */
-  const uJ=.29,FJ=FR(uJ),J=FJ.p.clone().addScaledVector(FJ.up,BH(uJ)*.93),TY=.26,TS=1.24;
+  const uJ=.2,FJ=FR(uJ),J=FJ.p.clone().addScaledVector(FJ.up,BH(uJ)*.86),TY=.36,TS=1.15;
   const torso=new T.Group();torso.position.copy(J);torso.rotation.y=TY;torso.scale.setScalar(TS);g.add(torso);
   torso.updateMatrix();
   const T2G=p=>v3(p).applyMatrix4(torso.matrix);
-  const SHL=s=>[s*.33,1.03,-.03];
-  const ELB=s=>s<0?[-.68,.79,.12]:[.73,.88,.03];
-  const WRI=s=>s<0?[-1.07,.57,.36]:[1.17,.76,.2];
-  const HD=s=>s<0?nrm([-.3,-.82,.48]):nrm([.42,-.88,.12]);
-  const PN0=s=>s<0?[.1,-.35,.95]:[-.25,-.15,.95];
-  const CORE_L=[0,.84,.12];
-  const core=mesh(new T.SphereGeometry(.064,24,16),coreM,v3(add(CORE_L,[0,0,-.012])));torso.add(core);
+  const SHL=s=>[s*.43,1.13,-.05];
+  const ELB=s=>s<0?[-.8,.86,.1]:[.86,.92,.02];
+  const WRI=s=>s<0?[-.95,.63,.5]:[1.15,.68,.28];
+  const HD=s=>s<0?nrm([-.12,-.55,.83]):nrm([.35,-.9,.2]);
+  const PN0=s=>s<0?[0,.85,.5]:[.6,.15,-.75];       /* the back of the hand: the fingers curl the other way */
+  const CORE_L=[0,.9,.18];
+  const core=mesh(new T.SphereGeometry(.074,24,16),coreM,v3(add(CORE_L,[0,0,-.014])));torso.add(core);
   const cl=new T.PointLight(0xff2412,1,1.2,2);cl.position.copy(v3(add(CORE_L,[0,0,.16])));torso.add(cl);
   const arms=[-1,1].map(s=>{const Sh=SHL(s),piv=new T.Group();piv.position.copy(v3(Sh));torso.add(piv);
     const anchor=new T.Object3D();piv.add(anchor);return {piv,s,anchor,Sh,E:ELB(s),W:WRI(s),ph:s*1.3};});
-  const neck=new T.Group();neck.position.set(0,1.28,.02);torso.add(neck);
-  const HS=1.33;
-  const head=new T.Group();head.position.set(0,.14,.04);head.scale.setScalar(HS);neck.add(head);
+  const neck=new T.Group();neck.position.set(0,1.38,.03);torso.add(neck);
+  const HS=1.25;
+  const head=new T.Group();head.position.set(0,.13,.03);head.scale.setScalar(HS);neck.add(head);
   const JP=[0,-.074,-.016];
   const jaw=new T.Group();jaw.position.copy(v3(JP));head.add(jaw);
   const flames=[];
@@ -13346,26 +13558,26 @@ B.god=function(K,U,S){
   function* job(){
     /* ---------- the plates: banded shells, each rolled lip overlapping the next ---------- */
     {
-      const OUT=[[0,.87],[.14,.91],[.3,.965],[.46,.998],[.6,.99],[.64,1.004],[.74,1.008],[.78,.994],[.84,1.014],[.93,1.036]];
-      const LIP=[[.965,1.078],[.992,1.096],[1.012,1.08],[1.02,1.045],[1.006,1.012]];
-      const INN=[[.93,.978],[.6,.95],[.25,.91],[.0,.86]];
+      const OUT=[[0,.86],[.14,.9],[.3,.965],[.46,1.0],[.6,1.006],[.66,.99],[.7,1.008],[.8,1.02],[.9,1.04]];
+      const LIP=[[.94,1.085],[.975,1.12],[1.005,1.115],[1.025,1.075],[1.01,1.03]];
+      const INN=[[.93,.98],[.6,.945],[.25,.9],[.0,.85]];
       const PRO=[...OUT.map(q=>[q[0],q[1],0]),...LIP.map(q=>[q[0],q[1],1]),...INN.map(q=>[q[0],q[1],2])];
-      const geos=[],NT=MOB?14:17,TM=2.1,NPp=PRO.length,Fs=PRO.map(()=>new Float32Array(12));
+      const geos=[],NT=MOB?13:14,TM=2.3,NPp=PRO.length,Fs=PRO.map(()=>new Float32Array(12));
       for(let k=0;k<plateInfo.length;k++){
         const pi=plateInfo[k],tint=.9+R()*.2;
         const pos=new Float32Array((NT+1)*NPp*3),col=new Float32Array((NT+1)*NPp*3),AB=new Float32Array(NPp*2);
         for(let i=0;i<NPp;i++){const s=PRO[i][0],u=MN(1,pi.ua+(pi.ub-pi.ua)*s);FRi(u,Fs[i]);const kk=shellK(pi,s);AB[i*2]=AW(u)*kk;AB[i*2+1]=BH(u)*kk;}
         for(let j=0;j<=NT;j++){
-          const th=-TM+2*TM*j/NT,st=Math.sin(th),ct=Math.cos(th),cl=ss(TM,TM-.3,ab(th)),keel=.032*Math.exp(-th*th/.03);
+          const th=-TM+2*TM*j/NT,st=Math.sin(th),ct=Math.cos(th),cl=ss(TM,TM-.3,ab(th)),keel=.04*Math.exp(-th*th/.03);
           for(let i=0;i<NPp;i++){
             const s=PRO[i][0],rho=PRO[i][1],kind=PRO[i][2],r=.955+(rho-.955)*cl,F=Fs[i];
             const a=AB[i*2]*r,b=AB[i*2+1]*r+keel*ss(0,.3,s)*(kind===2?.6:1);
             const o=(j*NPp+i)*3;
             pos[o]=F[0]+F[6]*a*st+F[9]*b*ct;pos[o+1]=F[1]+F[7]*a*st+F[10]*b*ct;pos[o+2]=F[2]+F[8]*a*st+F[11]*b*ct;
-            let c=.3*tint;
+            let c=.4*tint;
             if(kind===2||s<.28)c*=.35;                       /* shadowed where it slides under the plate before */
             else if(kind===1)c*=1.3;                          /* the rolled lip: worn bright */
-            c*=1-.55*ss(1.4,2.05,ab(th));                     /* grime down the flanks */
+            c*=1-.55*ss(1.5,2.25,ab(th));                     /* grime down the flanks */
             col[o]=c*1.02;col[o+1]=c;col[o+2]=c*.97;
           }
         }
@@ -13381,7 +13593,7 @@ B.god=function(K,U,S){
     /* ---------- the soft belly under the plates, creased segment by segment ---------- */
     {  /* an elliptical sweep that closes the hull from below (no peeking into the shell) */
       const NU=MOB?70:96,NR=MOB?12:16,pos=new Float32Array((NU+1)*(NR+1)*3),col=new Float32Array((NU+1)*(NR+1)*3),F=new Float32Array(12);
-      for(let i=0;i<=NU;i++){const u=i/NU*.99;FRi(u,F);const e=ss(0,.06,u)*(1-.35*ss(.9,.99,u)),cr=.5+.5*Math.cos(u*13.4*2*PI),a=AW(u)*.9*e*(1-.05*cr),b=BH(u)*.82*e*(1-.05*cr),dy=-.18*BH(u);
+      for(let i=0;i<=NU;i++){const u=i/NU*.99;FRi(u,F);const e=ss(0,.06,u)*(1-.35*ss(.9,.99,u)),cr=.5+.5*Math.cos(u*14.4*2*PI),a=AW(u)*.97*e*(1-.05*cr),b=BH(u)*.74*e*(1-.05*cr),dy=-.2*BH(u);
         for(let j=0;j<=NR;j++){const th=j/NR*PI*2,st=Math.sin(th),ct=Math.cos(th),o=(i*(NR+1)+j)*3;
           pos[o]=F[0]+F[6]*a*st+F[9]*(b*ct+dy);pos[o+1]=F[1]+F[7]*a*st+F[10]*(b*ct+dy);pos[o+2]=F[2]+F[8]*a*st+F[11]*(b*ct+dy);
           const c=.045*(1+.25*cr);col[o]=c*1.1;col[o+1]=c*.85;col[o+2]=c*.8;}}
@@ -13392,8 +13604,8 @@ B.god=function(K,U,S){
     if(over())yield 0;
 
     /* ---------- legs: five pairs, banded armour, clawed feet on the ground ---------- */
-    const LEGU=MOB?[.18,.36,.54,.72]:[.16,.3,.44,.58,.72],LSC=MOB?[1.06,1,.93,.85]:[1.08,1.04,1,.93,.85],LSP=MOB?[.5,.15,-.2,-.5]:[.55,.27,0,-.26,-.52];
-    const L1=.66,L2=.74,RAD=MOB?7:8;
+    const LEGU=MOB?[.21,.39,.57,.75]:[.2,.34,.48,.62,.76],LSC=MOB?[1.04,1,.95,.88]:[1.04,1.04,1,.95,.88],LSP=MOB?[.5,.15,-.2,-.5]:[.6,.3,0,-.3,-.58];
+    const L1=.9,L2=1.12,RAD=MOB?7:8;
     function banded(L,r0,r1,nb,bulge){
       const Rf=y=>(r0+(r1-r0)*y/L)*(1+bulge*Math.sin(PI*MN(1,MX(0,y/L))));
       const pr=[[0,-r0*.62],[r0*.62,-r0*.5],[r0*.93,-r0*.2]];
@@ -13402,23 +13614,24 @@ B.god=function(K,U,S){
       pr.push([r1*.95,L+.004],[r1*.7,L+r1*.45],[0,L+r1*.62]);
       return new T.LatheGeometry(pr.map(q=>new T.Vector2(q[0],q[1])),RAD);
     }
-    const femG=(()=>{const parts=[banded(L1,.112,.088,5,.06)];
-      const kn=new T.SphereGeometry(.096,RAD,7);kn.translate(0,L1,0);parts.push(kn);
-      [.3,.62].forEach((f,i)=>thorn(parts,[0,L1*f,.1],[0,.3,1],[0,-.5,.5],.14-.03*i,.026,true));
-      parts.forEach(q=>paintG(q,grey([.22,.21,.205])));return mergeI(parts);})();
-    const tibG=(()=>{const parts=[banded(L2,.088,.06,5,.05)];
-      const cuff=new T.TorusGeometry(.066,.018,5,RAD);cuff.rotateX(PI/2);cuff.translate(0,L2-.035,0);parts.push(cuff);
-      thorn(parts,[0,L2*.2,.08],[0,.2,1],[0,-.6,.5],.12,.022,true);
-      parts.forEach(q=>paintG(q,grey([.2,.195,.19])));return mergeI(parts);})();
+    const femG=(()=>{const parts=[banded(L1,.155,.125,4,.07)];
+      const kn=new T.SphereGeometry(.138,RAD,7);kn.translate(0,L1,0);parts.push(kn);
+      [.34,.66].forEach((f,i)=>thorn(parts,[0,L1*f,.15],[0,.25,1],[0,-.6,.45],.17-.03*i,.036,true));
+      thorn(parts,[0,L1+.02,.11],[0,.45,1],[0,-.2,1],.24,.05);                     /* the knee's spur */
+      parts.forEach(q=>paintG(q,grey([.3,.29,.28])));return mergeI(parts);})();
+    const tibG=(()=>{const parts=[banded(L2,.128,.074,5,.05)];
+      const cuff=new T.TorusGeometry(.084,.026,5,RAD);cuff.rotateX(PI/2);cuff.translate(0,L2-.05,0);parts.push(cuff);
+      thorn(parts,[0,L2*.16,.12],[0,.15,1],[0,-.6,.5],.14,.026,true);
+      parts.forEach(q=>paintG(q,grey([.28,.27,.26])));return mergeI(parts);})();
     /* foot: origin at the ankle, +z forward; the claws reach the ground at y -.07 */
     const footG=(()=>{const parts=[];
-      const palm=new T.SphereGeometry(1,RAD,6);palm.scale(.08,.045,.09);palm.translate(0,-.02,.035);parts.push(palm);
-      [-.66,-.22,.22,.66].forEach((a,i)=>{const d=[Math.sin(a),0,Math.cos(a)],L=i===1||i===2?1:.84;
-        const b=[d[0]*.05,-.02,.04+d[2]*.05];
-        parts.push(SK.tube([v3(b),v3(add(b,[d[0]*.09*L,.012,d[2]*.09*L])),v3(add(b,[d[0]*.19*L,-.018,d[2]*.19*L])),v3(add(b,[d[0]*.27*L,-.048,d[2]*.27*L])),v3(add(b,[d[0]*.31*L,-.072,d[2]*.31*L]))],u=>.027*(1-u*.85)+.002,7,5));});
-      parts.push(SK.tube([V(0,-.02,-.02),V(0,-.035,-.09),V(0,-.072,-.13)],u=>.022*(1-u)+.002,6,5));
+      const palm=new T.SphereGeometry(1,RAD,6);palm.scale(.115,.062,.125);palm.translate(0,-.02,.045);parts.push(palm);
+      [-.66,-.22,.22,.66].forEach((a,i)=>{const d=[Math.sin(a),0,Math.cos(a)],L=(i===1||i===2?1:.84)*1.25;
+        const b=[d[0]*.07,-.02,.06+d[2]*.07];
+        parts.push(SK.tube([v3(b),v3(add(b,[d[0]*.09*L,.014,d[2]*.09*L])),v3(add(b,[d[0]*.19*L,-.02,d[2]*.19*L])),v3(add(b,[d[0]*.27*L,-.055,d[2]*.27*L])),v3(add(b,[d[0]*.31*L,-.08,d[2]*.31*L]))],u=>.04*(1-u*.85)+.002,7,5));});
+      parts.push(SK.tube([V(0,-.02,-.03),V(0,-.04,-.1),V(0,-.08,-.15)],u=>.028*(1-u)+.002,6,5));
       parts.forEach(q=>paintG(q,grey([.19,.18,.175])));return mergeI(parts);})();
-    const coxaG=(()=>{const q=banded(.22,.13,.115,2,.05);paintG(q,grey([.2,.19,.19]));return q;})();
+    const coxaG=(()=>{const q=banded(.32,.2,.165,2,.05);paintG(q,grey([.2,.19,.19]));return q;})();
     if(over())yield 0;
     const NL=LEGU.length*2;
     femIM=new T.InstancedMesh(femG,legM,NL);tibIM=new T.InstancedMesh(tibG,legM,NL);footIM=new T.InstancedMesh(footG,legM,NL);
@@ -13426,15 +13639,15 @@ B.god=function(K,U,S){
     const LL=[];
     LEGU.forEach((u,li)=>[-1,1].forEach(side=>{
       const F=FR(u),s=LSC[li],a=AW(u),b=BH(u);
-      const hip=F.p.clone().addScaledVector(F.sd,side*a*.8).addScaledVector(F.up,-b*.45);
-      const inner=F.p.clone().addScaledVector(F.sd,side*a*.35).addScaledVector(F.up,-b*.3);
+      const hip=F.p.clone().addScaledVector(F.sd,side*a*.86).addScaledVector(F.up,-b*.32);
+      const inner=F.p.clone().addScaledVector(F.sd,side*a*.35).addScaledVector(F.up,-b*.25);
       const oh=F.sd.clone().multiplyScalar(side).setY(0).normalize(),th=F.t.clone().setY(0).normalize();
-      const be=LSP[li],reach=1.14*s;
+      const be=LSP[li],reach=1.08*s;
       const dir=oh.clone().multiplyScalar(Math.cos(be)).addScaledVector(th,-Math.sin(be));
       const foot=hip.clone().addScaledVector(dir,reach);
       const r=Math.hypot(foot.x,foot.z);
       if(r>1.55&&r<2.04){const k=(r>1.74?2.06:1.52)/r;foot.x*=k;foot.z*=k;}
-      foot.y=groundY(foot.x,foot.z)+.075*s;
+      foot.y=groundY(foot.x,foot.z)+.095*s;
       const i=LL.length;
       LL.push({hip,foot0:foot,foot:foot.clone(),s,side,dir,ph:li*.95+(side>0?PI*.55:0),knee:new T.Vector3(),yaw:Math.atan2(dir.x,dir.z)});
       segM(coxIM,i,inner,hip,F.up,s);
@@ -13446,100 +13659,105 @@ B.god=function(K,U,S){
 
     /* ---------- the torso: a starved, ribbed body out of a knot of sinew ---------- */
     const baseParts=(u,s_)=>{
-      u(P.ell([0,.0,-.02],[.42,.17,.38]));                                         /* the knot where he grows out of the shell */
-      u(P.ell([0,.12,-.02],[.26,.15,.21]),.1);
-      u(P.ell([0,.3,-.03],[.19,.19,.13]),.09);                                     /* a starved waist on a pelvis */
-      u(P.ell([-.15,.2,-.03],[.075,.07,.1],[0,0,.4]),.05);u(P.ell([.15,.2,-.03],[.075,.07,.1],[0,0,-.4]),.05);
-      u(P.ell([0,.52,-.03],[.18,.12,.12]),.08);
-      u(P.ell([0,.78,-.03],[.225,.24,.165]),.08);                                   /* the cage */
-      u(P.ell([0,.95,-.04],[.25,.11,.135]),.06);
-      s_(P.ell([0,.5,.1],[.1,.12,.04]),.05);                                       /* the belly sucked in */
+      u(P.ell([0,.0,-.08],[.54,.16,.5]));                                          /* a broad root of sinew spread on the shell */
+      u(P.ell([0,-.2,-.06],[.42,.22,.44]),.1);                                     /* ...and sunk deep into it (no ledge) */
+      u(P.ell([0,.18,-.05],[.37,.2,.31]),.12);                                     /* haunches */
+      u(P.ell([0,.43,-.03],[.26,.2,.19]),.1);                                      /* a hard, hollowed belly */
+      u(P.ell([0,.64,-.03],[.285,.14,.2]),.08);
+      u(P.ell([0,.83,-.03],[.315,.27,.22]),.1);                                    /* the cage */
+      u(P.ell([0,1.0,-.05],[.34,.14,.2]),.07);
+      s_(P.ell([0,.47,.17],[.14,.12,.045]),.05);
     };
     const baseF=mk((A,u,s_)=>baseParts(u,s_));
     /* ribs laid onto the cage: higher behind, dropping toward the breastbone */
     const ribs=[];
-    for(let i=0;i<6;i++){const y0=.99-i*.068,fl=i>3;
-      for(const s of [-1,1]){const pts=[];const a1=fl?.95:.3;
-        for(let k=0;k<=6;k++){const f=k/6,a=s*(2.55+(a1-2.55)*f),y=y0-.11*f*f-.02*f,d=[Math.sin(a),0,Math.cos(a)];
-          const h=SK.hit(baseF,add([0,y,-.03],d,.6),mul(d,-1),.7);pts.push([...add(h,d,.004),.023-.004*f]);}
+    for(let i=0;i<6;i++){const y0=1.03-i*.074,fl=i>3;
+      for(const s of [-1,1]){const pts=[];const a1=fl?.9:.36;
+        for(let k=0;k<=6;k++){const f=k/6,a=s*(2.5+(a1-2.5)*f),y=y0-.13*f*f-.02*f,d=[Math.sin(a),0,Math.cos(a)];
+          const h=SK.hit(baseF,add([0,y,-.03],d,.8),mul(d,-1),.9);pts.push([...add(h,d,.006),.03-.006*f]);}
         ribs.push(pts);}}
     if(over())yield 0;
-    const abRidge=[];
-    [.62,.54,.46,.38].forEach((y,i)=>{const pts=[];for(let k=0;k<=4;k++){const a=(k/4-.5)*2*(1-i*.08),d=[Math.sin(a),0,Math.cos(a)];
-      const h=SK.hit(baseF,add([0,y,-.03],d,.5),mul(d,-1),.6);pts.push([...add(h,d,.002),.017]);}abRidge.push(pts);});
+    const abRidge=[];                                                              /* the belly in hard segments */
+    [.62,.53,.44,.35].forEach((y,i)=>{const pts=[];for(let k=0;k<=4;k++){const a=(k/4-.5)*2.1*(1-i*.06),d=[Math.sin(a),0,Math.cos(a)];
+      const h=SK.hit(baseF,add([0,y,-.03],d,.6),mul(d,-1),.7);pts.push([...add(h,d,.003),.024]);}abRidge.push(pts);});
     const cords=[];                                                                /* sinew cords gripping the shell */
-    for(let i=0;i<9;i++){const a=(i/9)*PI*2+.3,d=[Math.sin(a),0,Math.cos(a)];
-      cords.push([[d[0]*.12,.3,d[2]*.08-.02,.03],[d[0]*.24,.12,d[2]*.2-.02,.035],[d[0]*.36,-.02,d[2]*.33-.02,.03],[d[0]*.46,-.1,d[2]*.42-.02,.02]]);}
+    for(let i=0;i<12;i++){const a=(i/12)*PI*2+.2,d=[Math.sin(a),0,Math.cos(a)];
+      cords.push([[d[0]*.2,.36,d[2]*.15-.03,.04],[d[0]*.34,.16,d[2]*.28-.05,.045],[d[0]*.5,-.02,d[2]*.46-.07,.035],[d[0]*.62,-.14,d[2]*.58-.08,.022]]);}
     const torsoF=mk((A,u,s_,pr)=>{
       baseParts(u,s_);
-      cords.forEach(c=>u(P.chain(c,.02),.03));
-      pr(s=>u(P.ell([s*.1,.95,.075],[.095,.045,.045],[0,0,s*.3]),.035));          /* thin pectorals */
-      pr(s=>u(P.cone([s*.03,1.15,-.05],[s*.28,1.05,-.04],.047,.036),.05));          /* trapezius */
-      pr(s=>u(P.ell(SHL(s),[.066,.07,.066]),.04));                                  /* shoulder heads */
-      pr(s=>u(P.chain([[s*.02,1.06,.078,.014],[s*.14,1.07,.072,.015],[s*.3,1.06,.015,.016]],.01),.02));  /* collarbones */
-      pr(s=>u(P.ell([s*.12,.88,-.155],[.075,.095,.02],[.2,0,s*.3]),.035));          /* shoulder blades */
-      u(P.chain([[0,1.0,-.03,.06],[0,1.14,-.015,.045],[0,1.3,.02,.042]],.02),.05);  /* neck */
-      pr(s=>u(P.cone([s*.034,1.27,.03],[s*.03,1.07,.078],.014,.012),.012));         /* tendons */
-      u(P.fn([0,.6,-.14],.7,(x,y,z)=>{const yy=MN(1.02,MX(.14,.14+Math.round((y-.14)/.055)*.055)),zb=-.12-.05*ss(.45,.72,yy)+.03*ss(.95,1.05,yy);
-        return sq(x*x+(y-yy)*(y-yy)+(z-zb)*(z-zb))-.022;}),.018);                   /* the spine stands out behind */
-      ribs.forEach(pts=>u(P.chain(pts,.012),.014));
-      abRidge.forEach(pts=>u(P.chain(pts,.01),.012));
-      u(P.chain([[0,1.0,.1,.022],[0,.9,.125,.022],[0,.72,.118,.019],[0,.62,.1,.016]],.01),.02);   /* breastbone */
-      s_(P.sph(add(CORE_L,[0,0,.03]),.074),.012);                                   /* the socket of the core */
-      u(P.fn(CORE_L,.14,(x,y,z)=>{const q=sq((x-CORE_L[0])**2+(y-CORE_L[1])**2)-.084;return sq(q*q+(z-CORE_L[2]-.012)**2)-.018;}),.014);
+      cords.forEach(c=>u(P.chain(c,.02),.035));
+      pr(s=>u(P.ell([s*.19,.46,.0],[.085,.17,.13],[0,0,s*.12]),.06));             /* obliques */
+      pr(s=>u(P.ell([s*.27,.8,-.07],[.1,.24,.15],[0,0,-s*.15]),.06));             /* lats under the ribs */
+      pr(s=>u(P.ell([s*.14,.99,.14],[.14,.075,.07],[0,0,s*.3]),.045));            /* pectorals */
+      pr(s=>u(P.cone([s*.05,1.27,-.07],[s*.37,1.14,-.05],.085,.062),.07));          /* heavy trapezius */
+      pr(s=>u(P.ell(SHL(s),[.1,.1,.1]),.05));                                       /* shoulder heads */
+      pr(s=>u(P.chain([[s*.03,1.13,.13,.019],[s*.19,1.14,.11,.021],[s*.37,1.13,.02,.023]],.012),.022));  /* collarbones */
+      pr(s=>u(P.ell([s*.15,.96,-.21],[.1,.12,.026],[.2,0,s*.3]),.045));           /* shoulder blades */
+      u(P.chain([[0,1.06,-.05,.108],[0,1.24,-.02,.09],[0,1.42,.03,.078]],.03),.06); /* a thick neck */
+      pr(s=>u(P.cone([s*.052,1.4,.06],[s*.046,1.14,.13],.023,.019),.016));         /* its cords */
+      u(P.fn([0,.6,-.22],.75,(x,y,z)=>{const yy=MN(1.1,MX(.16,.16+Math.round((y-.16)/.06)*.06)),zb=-.205-.045*ss(.5,.78,yy)+.04*ss(1.0,1.12,yy);
+        return sq(x*x+(y-yy)*(y-yy)+(z-zb)*(z-zb))-.027;}),.02);                    /* the spine stands out behind */
+      ribs.forEach(pts=>u(P.chain(pts,.014),.016));
+      abRidge.forEach(pts=>u(P.chain(pts,.012),.016));
+      u(P.chain([[0,1.1,.17,.028],[0,.98,.2,.028],[0,.8,.19,.024],[0,.68,.17,.02]],.01),.02);   /* breastbone */
+      s_(P.sph(add(CORE_L,[0,0,.035]),.086),.014);                                  /* the socket of the core */
+      u(P.fn(CORE_L,.16,(x,y,z)=>{const q=sq((x-CORE_L[0])**2+(y-CORE_L[1])**2)-.096;return sq(q*q+(z-CORE_L[2]-.014)**2)-.021;}),.016);
     });
     const paintT=(x,y,z,nx,ny,nz,oc,o)=>{
       let r=.105,gg=.09,b=.085;
-      const kn=ss(.2,-.06,y);r*=1-.5*kn;gg*=1-.55*kn;b*=1-.55*kn;
-      const cd=Math.hypot(x-CORE_L[0],y-CORE_L[1],z-CORE_L[2]),hot=ss(.18,.06,cd);r+=.06*hot;gg*=1-.5*hot;b*=1-.5*hot;
+      const kn=ss(.24,-.08,y);r*=1-.5*kn;gg*=1-.55*kn;b*=1-.55*kn;
+      const cd=Math.hypot(x-CORE_L[0],y-CORE_L[1],z-CORE_L[2]),hot=ss(.2,.07,cd);r+=.06*hot;gg*=1-.5*hot;b*=1-.5*hot;
       o[0]=r;o[1]=gg;o[2]=b;};
-    torso.add(new T.Mesh(SK.build(torsoF,[-.5,-.045,-.46],[.5,1.36,.44],.019*Q,{name:'god-torso',ao:1,aoStep:.025,aoK:1.3,aoMin:.12,paint:paintT}),fleshM));
+    torso.add(new T.Mesh(SK.build(torsoF,[-.68,-.36,-.62],[.68,1.5,.5],.0245*Q,{name:'god-torso',ao:1,aoStep:.025,aoK:1.3,aoMin:.12,paint:paintT}),fleshM));
     if(over())yield 0;
 
     /* ---------- arms: long, thin, spread wide; hands of long claws ---------- */
     for(const A of arms){
       const s=A.s,Sh=A.Sh,E=A.E,W=A.W,da=nrm(sub(E,Sh)),df=nrm(sub(W,E));
+      const bk=nrm(sub(da,df));                                                    /* behind the elbow's bend */
       const armF=mk((A_,u)=>{
-        u(P.chain([[...Sh,.058],[...lerp(Sh,E,.5),.046],[...E,.04]],.02));
-        u(axell(add(lerp(Sh,E,.18),[s*.01,.01,0]),da,.1,.06),.035);                   /* wasted deltoid */
-        u(axell(add(lerp(Sh,E,.5),[0,0,.012]),da,.16,.038),.02);
-        u(P.sph(add(E,[0,.004,-.03]),.038),.016);                                      /* the elbow's point */
-        u(P.chain([[...E,.04],[...lerp(E,W,.3),.043],[...lerp(E,W,.7),.032],[...W,.027]],.02),.02);
-        u(axell(add(lerp(E,W,.28),[0,.008,0]),df,.15,.038),.02);
-        u(P.cone(add(lerp(E,W,.15),[0,.03,0]),add(W,[0,.018,0]),.01,.009),.01);        /* a tendon */
-        u(P.sph(W,.029),.012);
+        u(P.chain([[...Sh,.1],[...lerp(Sh,E,.5),.078],[...E,.064]],.03));
+        u(axell(add(lerp(Sh,E,.14),[s*.015,.02,0]),da,.16,.112),.05);                 /* deltoid */
+        u(axell(add(lerp(Sh,E,.5),[0,.0,.045]),da,.2,.066),.03);                     /* biceps */
+        u(axell(add(lerp(Sh,E,.45),[0,.01,-.05]),da,.21,.064),.03);                /* triceps */
+        u(P.sph(add(E,bk,.034),.056),.02);                                             /* the elbow's point */
+        u(P.chain([[...E,.064],[...lerp(E,W,.28),.074],[...lerp(E,W,.7),.056],[...W,.044]],.025),.025);
+        u(axell(add(lerp(E,W,.3),[0,.012,0]),df,.2,.07),.03);                      /* forearm */
+        u(P.cone(add(lerp(E,W,.12),[0,.04,.01]),add(W,[0,.028,.004]),.013,.011),.012);  /* tendons */
+        u(P.cone(add(lerp(E,W,.12),[0,-.03,.03]),add(W,[0,-.022,.012]),.012,.01),.012);
+        u(P.sph(W,.048),.015);
       });
-      const lo=[MN(Sh[0],E[0],W[0])-.1,MN(Sh[1],E[1],W[1])-.1,MN(Sh[2],E[2],W[2])-.1],hi=[MX(Sh[0],E[0],W[0])+.1,MX(Sh[1],E[1],W[1])+.1,MX(Sh[2],E[2],W[2])+.1];
+      const lo=[MN(Sh[0],E[0],W[0])-.15,MN(Sh[1],E[1],W[1])-.15,MN(Sh[2],E[2],W[2])-.15],hi=[MX(Sh[0],E[0],W[0])+.15,MX(Sh[1],E[1],W[1])+.15,MX(Sh[2],E[2],W[2])+.15];
       const off=v3(mul(Sh,-1));
-      const am=new T.Mesh(SK.build(armF,lo,hi,.0168*Q,{name:'god-arm',ao:1,aoStep:.018,paint:(x,y,z,nx,ny,nz,oc,o)=>{o[0]=.1;o[1]=.087;o[2]=.082;}}),fleshM);
+      const am=new T.Mesh(SK.build(armF,lo,hi,.018*Q,{name:'god-arm',ao:1,aoStep:.018,paint:(x,y,z,nx,ny,nz,oc,o)=>{o[0]=.1;o[1]=.087;o[2]=.082;}}),fleshM);
       am.position.copy(off);A.piv.add(am);
       /* the hand */
-      const Hd=HD(s),pn0=PN0(s),pn=nrm(sub(pn0,mul(Hd,dot(pn0,Hd)))),sd=nrm(crs(Hd,pn)),pc=add(W,Hd,.058);
+      const Hd=HD(s),pn0=PN0(s),pn=nrm(sub(pn0,mul(Hd,dot(pn0,Hd)))),sd=nrm(crs(Hd,pn)),pc=add(W,Hd,.07);
       const fing=[];
       const handF=mk((A_,u)=>{
-        u(P.cone(add(W,Hd,-.04),add(W,Hd,.02),.027,.03),.01);
-        u(P.oell(pc,sd,Hd,pn,[.05,.066,.017]),.014);
-        for(let k=0;k<4;k++){const o=(k-1.5)*.027,kn=add(add(pc,Hd,.056),sd,o),L=[.1,.084,.068].map(v=>v*1.3*(k===0||k===3?.86:1)),sp=(k-1.5)*.22;
+        u(P.cone(add(W,Hd,-.05),add(W,Hd,.025),.04,.042),.012);
+        u(P.oell(pc,sd,Hd,pn,[.068,.085,.024]),.016);
+        for(let k=0;k<4;k++){const o=(k-1.5)*.034,kn=add(add(pc,Hd,.07),sd,o),L=[.12,.1,.082].map(v=>v*(k===0||k===3?.86:1)),sp=(k-1.5)*.2;
           const dA=a=>nrm(add(add(mul(Hd,Math.cos(a)),mul(pn,-Math.sin(a))),mul(sd,sp)));
-          const p1=add(kn,dA(.2),L[0]),p2=add(p1,dA(.52),L[1]),p3=add(p2,dA(.85),L[2]);
-          u(P.sph(kn,.015),.006);
-          u(P.chain([[...kn,.0135],[...p1,.012],[...p2,.0105],[...p3,.009]],.005),.007);
-          u(P.sph(p1,.0125),.004);u(P.sph(p2,.011),.004);
-          fing.push({p:p3,d:dA(1.1),d2:dA(1.7)});}
-        const tb=add(add(pc,sd,-.046),Hd,-.014),td=nrm(add(add(Hd,mul(sd,-.9)),mul(pn,-.3)));
-        const t1=add(tb,td,.06),t2=add(t1,nrm(add(td,mul(Hd,.6))),.05);
-        u(P.chain([[...tb,.015],[...t1,.0125],[...t2,.0105]],.005),.008);
+          const p1=add(kn,dA(.25),L[0]),p2=add(p1,dA(.62),L[1]),p3=add(p2,dA(.98),L[2]);
+          u(P.sph(kn,.021),.007);
+          u(P.chain([[...kn,.019],[...p1,.016],[...p2,.0145],[...p3,.012]],.006),.008);
+          u(P.sph(p1,.0175),.005);u(P.sph(p2,.0155),.005);                            /* knuckles */
+          fing.push({p:p3,d:dA(1.2),d2:dA(1.8)});}
+        const tb=add(add(pc,sd,-.06),Hd,-.02),td=nrm(add(add(Hd,mul(sd,-.9)),mul(pn,-.35)));
+        const t1=add(tb,td,.075),t2=add(t1,nrm(add(td,mul(Hd,.6))),.065);
+        u(P.chain([[...tb,.021],[...t1,.017],[...t2,.014]],.006),.009);
         fing.push({p:t2,d:nrm(add(td,mul(Hd,.9))),d2:nrm(add(Hd,mul(pn,-.8)))});
       });
-      const hm=new T.Mesh(SK.build(handF,sub(W,[.36,.36,.36]),add(W,[.36,.36,.36]),.0095*Q,{name:'god-hand',ao:1,aoStep:.009,paint:(x,y,z,nx,ny,nz,oc,o)=>{o[0]=.095;o[1]=.083;o[2]=.078;}}),fleshM);
+      const hm=new T.Mesh(SK.build(handF,sub(W,[.42,.42,.42]),add(W,[.42,.42,.42]),.0115*Q,{name:'god-hand',ao:1,aoStep:.01,paint:(x,y,z,nx,ny,nz,oc,o)=>{o[0]=.095;o[1]=.083;o[2]=.078;}}),fleshM);
       hm.position.copy(off);A.piv.add(hm);
-      const cls=[];fing.forEach(f=>{const a=v3(f.p),p1=a.clone().addScaledVector(v3(f.d),.05),p2=p1.clone().addScaledVector(v3(f.d2),.06);cls.push(SK.tube([a.clone().addScaledVector(v3(f.d),-.014),a,p1,p2],u=>.0102*(1-u)+.001,10,6));});
+      const cls=[];fing.forEach(f=>{const a=v3(f.p),p1=a.clone().addScaledVector(v3(f.d),.065),p2=p1.clone().addScaledVector(v3(f.d2),.075);cls.push(SK.tube([a.clone().addScaledVector(v3(f.d),-.018),a,p1,p2],u=>.0135*(1-u)+.001,10,6));});
       const cm=new T.Mesh(mergeI(cls),hornM);cm.position.copy(off);A.piv.add(cm);
       A.anchor.position.copy(v3(sub(add(pc,Hd,.02),Sh)));
       /* wet strands hanging off the arm */
       const L=[];const n=MOB?6:11;
       for(let i=0;i<n;i++){const f=.08+i/n*.9,p=f<.5?lerp(Sh,E,f*2):lerp(E,W,(f-.5)*2),loc=sub(p,Sh);
-        const len=.12+R()*.3,root=add(loc,[0,-.03,-.01]);
+        const len=.14+R()*.32,root=add(loc,[0,-.055,-.01]);
         L.push({pts:[v3(root),v3(add(root,[(R()-.5)*.03,-len*.35,.0])),v3(add(root,[(R()-.5)*.05,-len*.7,.01])),v3(add(root,[(R()-.5)*.06,-len,.02]))],w:[.03+R()*.02,.004],n:V(0,0,1),ph:R(),wind:[s*.2,0,.3]});}
       A.piv.add(SK.strips(K,U,L,strandOpt));
       if(over())yield 0;
@@ -13564,7 +13782,7 @@ B.god=function(K,U,S){
         const c=Math.pow(MX(0,1-ab(K.n3(x*26+3,y*26,z*26)-.5)*9),3);return d+.0022*c;});
     });
     const inSock=(x,y,z)=>MN(Math.hypot((x-.047)/.037,(y+.014)/.041,(z-.128)/.06),Math.hypot((x+.047)/.037,(y+.014)/.041,(z-.128)/.06));
-    head.add(new T.Mesh(SK.build(skullF,[-.17,-.2,-.2],[.17,.2,.2],.0097*Q,{name:'god-skull',ao:2,aoStep:.011,aoK:1.4,aoMin:.06,paint:(x,y,z,nx,ny,nz,oc,o)=>{
+    head.add(new T.Mesh(SK.build(skullF,[-.17,-.2,-.2],[.17,.2,.2],.011*Q,{name:'god-skull',ao:2,aoStep:.011,aoK:1.4,aoMin:.06,paint:(x,y,z,nx,ny,nz,oc,o)=>{
       let c=.5;const e=inSock(x,y,z);if(e<1.25)c*=ss(.8,1.25,e)*.9+.1;
       if(Math.hypot(x/.018,(y+.058)/.028,(z-.146)/.04)<1.3)c*=.15;
       c*=.8+.25*ss(-.05,.12,y);o[0]=c*1.03;o[1]=c;o[2]=c*.93;}}),boneM));
@@ -13671,36 +13889,37 @@ B.god=function(K,U,S){
     {
       const th=[];
       for(let k=0;k<plateInfo.length;k++){
-        const big=k<4,sc=1-.5*k/plateInfo.length;
-        const set=big?[[0,.1,.62],[.55,.35,.52],[-.55,.35,.52],[1.1,.2,.46],[-1.1,.2,.46],[1.6,.05,.32],[-1.6,.05,.32]]
-                     :[[0,.2,.3],[.45,.15,.2],[-.45,.15,.2],[.9,.1,.26],[-.9,.1,.26],[1.35,-.1,.2],[-1.35,-.1,.2],[1.75,-.2,.15],[-1.75,-.2,.15]];
-        const nearJ=plateInfo[k].ub>uJ-.1&&plateInfo[k].ua<uJ+.12;
-        for(const [a,up,L] of set){if(nearJ&&ab(a)<1.)continue;const q=onPlate(k,big?.55:.88,a+(R()-.5)*.12);
-          const d=q.n.clone().addScaledVector(q.F.t,big?-.55:.55).addScaledVector(K.UP,up).normalize();
-          const h=q.n.clone().addScaledVector(q.F.t,big?-1.2:1.3).addScaledVector(K.UP,-.5).normalize();
-          thorn(th,[q.p.x,q.p.y,q.p.z],[d.x,d.y,d.z],[h.x,h.y,h.z],L*sc*(.8+R()*.4)*(big?1.25:1),(big?.052:.032)*sc+.008,!big&&ab(a)>.5);
+        const big=k>=1&&k<3,sc=1-.5*k/plateInfo.length;
+        const set=big?[[0,.35,.5],[.6,.3,.46],[-.6,.3,.46],[1.2,.15,.4],[-1.2,.15,.4],[1.75,0,.28],[-1.75,0,.28]]
+                     :[[0,.35,.38],[.5,.25,.24],[-.5,.25,.24],[1.0,.12,.3],[-1.0,.12,.3],[1.5,0,.22],[-1.5,0,.22]];
+        const nearJ=plateInfo[k].ub>uJ-.08&&plateInfo[k].ua<uJ+.1;
+        for(const [a,up,L] of set){if(nearJ&&ab(a)<1.)continue;const q=onPlate(k,big?.55:.86,a+(R()-.5)*.1);
+          const d=q.n.clone().addScaledVector(q.F.t,big?.05:.4).addScaledVector(K.UP,up+(big?.25:0)).normalize();
+          const h=q.F.t.clone().multiplyScalar(1.3).addScaledVector(q.n,.25).addScaledVector(K.UP,-.15).normalize();
+          thorn(th,[q.p.x,q.p.y,q.p.z],[d.x,d.y,d.z],[h.x,h.y,h.z],L*sc*(.85+R()*.3)*(big?1.2:1),(big?.056:.036)*sc+.01,!big&&ab(a)>.5);
           if(over())yield 0;}
-        for(let m=0;m<2;m++){const q=onPlate(k,.35+R()*.45,(R()*2-1)*1.7);
-          const d=q.n.clone().addScaledVector(q.F.t,.4).normalize(),h=q.F.t.clone().addScaledVector(q.n,.3);
-          thorn(th,[q.p.x,q.p.y,q.p.z],[d.x,d.y,d.z],[h.x,h.y,h.z],(.08+R()*.06)*(sc+.3),.014,true);}
         if(over())yield 0;
       }
-      {const F=FR(.995),a=F.p;thorn(th,[a.x,a.y,a.z],[F.t.x,F.t.y-.3,F.t.z],[0,-1,0],.34,.05);}      /* the tail's sting */
+      {const F=FR(.99),a=F.p;thorn(th,[a.x,a.y,a.z],[F.t.x,F.t.y+.15,F.t.z],[F.t.x,F.t.y+.8,F.t.z],.42,.06);}      /* the tail's sting */
       crawl.add(new T.Mesh(mergeI(th),hornM));
     }
     if(over())yield 0;
     /* ---------- twisted roots: out of the knot, over the shell and up like antlers ---------- */
     {
       const rt=[];
+      const u_=i=>i/6;
       const grow=(p,d,len,r,depth,rise)=>{const pts=[v3(p)];let q=p.slice(),dd=nrm(d);const n=6;
         for(let i=0;i<n;i++){dd=nrm(add(dd,[(R()-.5)*.95,(R()-.5)*.4+(rise?.1:-.07),(R()-.5)*.95]));q=add(q,dd,len/n);
-          if(!rise){const F=FR(uJ),lim=F.p.y+BH(uJ)*.7-.25*Math.hypot(q[0]-J.x,q[2]-J.z);if(q[1]<lim)q[1]=lim;}   /* lie over the shell */
+          if(!rise){const F0=FR(uJ),al=(q[0]-F0.p.x)*F0.t.x+(q[2]-F0.p.z)*F0.t.z,uu=MN(.98,MX(.02,uJ+al/3.9)),F=FR(uu),a=AW(uu),b=BH(uu),
+              xo=(q[0]-F.p.x)*F.sd.x+(q[2]-F.p.z)*F.sd.z,k=ab(xo)/a;
+            if(k<.97){q[1]=F.p.y+b*sq(1-k*k)+.045*(1-u_(i));}                                   /* lie on the shell */
+            else{dd=nrm(add(dd,[0,-.6,0]));q[1]=MN(q[1],F.p.y+b*.25);}}                          /* then droop down its flank */
           pts.push(v3(q));}
-        rt.push(SK.tube(pts,u=>r*Math.pow(1-u*.9,1.25)*(1+.16*Math.sin(u*19+r*50)+.08*Math.sin(u*47))+.003,MOB?10:14,MOB?5:7));
+        rt.push(SK.tube(pts,u=>r*Math.pow(1-u*.9,1.25)*(1+.16*Math.sin(u*19+r*50)+.08*Math.sin(u*47))+.003,MOB?10:13,MOB?5:6));
         if(depth>0)for(let c=0;c<2;c++){const i=2+Math.floor(R()*3),p2=[pts[i].x,pts[i].y,pts[i].z];grow(p2,add(dd,[(R()-.5)*1.3,R()*.8,(R()-.5)*1.3]),len*.5,r*(1-i/n*.7)*.72,depth-1,true);}};
       const RA=[[-.75,.05,1.2,.105,1,0],[-.2,.12,1.0,.09,1,0],[.5,.02,1.05,.095,1,0],[1.35,-.05,.9,.08,1,0],[-1.5,-.05,1.0,.085,1,0],[2.4,-.1,.75,.065,0,0],[-2.45,-.1,.75,.065,0,0],[-.55,.75,.75,.06,1,1],[.75,.7,.7,.055,1,1]];
       for(const [a,el,L,r,dp,rise] of RA){const d=[Math.sin(a)*Math.cos(el),Math.sin(el),Math.cos(a)*Math.cos(el)];
-        const p0=T2G([d[0]*.18,.16+d[1]*.08,d[2]*.16-.02]),dg=v3(d).applyQuaternion(torso.quaternion);
+        const p0=T2G([d[0]*.36,.08+d[1]*.08,d[2]*.32-.06]),dg=v3(d).applyQuaternion(torso.quaternion);
         grow([p0.x,p0.y,p0.z],[dg.x,dg.y,dg.z],L,r,MOB?0:dp,rise);
         if(over())yield 0;}
       rt.forEach(q=>paintG(q,(x,y,z,o)=>{const c=.21+.12*K.n3(x*9,y*9,z*9);o[0]=c;o[1]=c*.97;o[2]=c*.93;}));
@@ -13725,15 +13944,15 @@ B.god=function(K,U,S){
         pr(s=>s_(P.ell([s*.078,.0,.0],[.02,.03,.04]),.02));
         A.I(P.plane([0,-1,0],.075),.01);
       });
-      const sg=SK.build(sF,[-.1,-.085,-.12],[.1,.13,.12],.0165*Q,{name:'god-skulls',ao:2,aoStep:.012,aoK:1.8,aoMin:.03,paint:(x,y,z,nx,ny,nz,oc,o)=>{let c=.46;if(z>.05&&Math.min(Math.hypot((x-.03)/.026,(y-.002)/.028),Math.hypot((x+.03)/.026,(y-.002)/.028))<1.05&&nz<.6)c=.03;o[0]=c;o[1]=c*.93;o[2]=c*.82;}});
-      const SKP=MOB?[[1.2,.5],[-2.1,-.4],[2.5,1.2]]:[[1.22,.6],[-2.1,-.4],[2.5,1.2],[-.35,2.2]];
+      const sg=SK.build(sF,[-.1,-.085,-.12],[.1,.13,.12],.019*Q,{name:'god-skulls',ao:2,aoStep:.012,aoK:1.8,aoMin:.03,paint:(x,y,z,nx,ny,nz,oc,o)=>{let c=.46;if(z>.05&&Math.min(Math.hypot((x-.03)/.026,(y-.002)/.028),Math.hypot((x+.03)/.026,(y-.002)/.028))<1.05&&nz<.6)c=.03;o[0]=c;o[1]=c*.93;o[2]=c*.82;}});
+      const SKP=MOB?[[1.25,.9],[-2.1,-.4]]:[[1.25,.9],[-2.2,-.2],[2.5,1.2]];
       const sim=new T.InstancedMesh(sg,dustM,SKP.length);
       SKP.forEach(([x,z],i)=>{const y=groundY(x,z),sc=1.55+R()*.45;M4.compose(V(x,y+.06*sc-.012,z),new T.Quaternion().setFromEuler(new T.Euler((R()-.5)*.4,R()*PI*2,(R()-.5)*.5)),V(sc,sc,sc));sim.setMatrixAt(i,M4);});
       sim.instanceMatrix.needsUpdate=true;g.add(sim);
     }
   }
   const strandOpt={color:0x120b0a,rough:.26,amp:.045,flut:.35,tear:.22,fray:.2,seg:8,fold:.3,speed:.8};
-  const LK=.019,NLK=MOB?24:34,PIT=LK*1.75;
+  const LK=.019,NLK=MOB?24:30,PIT=LK*1.75;
 
   /* ---------- the rig ---------- */
   const mX=new T.Vector3(),mY=new T.Vector3(),mZ=new T.Vector3(),M4=new T.Matrix4(),tA=new T.Vector3(),tB=new T.Vector3();
@@ -13751,7 +13970,7 @@ B.god=function(K,U,S){
       const a=legs.L1*L.s,b=legs.L2*L.s;
       tA.subVectors(L.foot,L.hip);const d=MN(tA.length(),(a+b)*.998);tA.normalize();
       const ca=MN(1,MX(-1,(a*a+d*d-b*b)/(2*a*d))),sa=sq(1-ca*ca);
-      pole.set(0,.55,0).addScaledVector(L.dir,.85+.2*lift).normalize();
+      pole.set(0,1,0).addScaledVector(L.dir,.5+.15*lift).normalize();
       tB.copy(pole).addScaledVector(tA,-pole.dot(tA)).normalize();
       L.knee.copy(L.hip).addScaledVector(tA,a*ca).addScaledVector(tB,a*sa);
       segM(femIM,i,L.hip,L.knee,pole,L.s);
@@ -13783,9 +14002,9 @@ B.god=function(K,U,S){
   }
   K.later(job());
 
-  const LOOK=MOB?[.05,1.4,-.25]:[.05,1.55,-.25];
+  const LOOK=MOB?[0,1.5,-.35]:[0,1.62,-.35];
   let twitch=0;
-  return {g,frame:{dist:MOB?9.6:7.55,y:MOB?1.1:1.2,look:LOOK,ang:.1},
+  return {g,frame:{dist:MOB?10.4:8.3,y:MOB?1.2:1.3,look:LOOK,ang:.38},
     update(t,dt,cam){
       /* the core: a double beat */
       const x=(t%2.1)/2.1,b=Math.exp(-Math.pow((x-.1)/.05,2))+Math.exp(-Math.pow((x-.28)/.06,2))*.65;
@@ -13795,7 +14014,7 @@ B.god=function(K,U,S){
       torso.rotation.set(Math.sin(t*.37)*.018,TY+Math.sin(t*.23)*.03,Math.sin(t*.29)*.018);
       arms.forEach(A=>{A.piv.rotation.set(Math.sin(t*.43+A.ph)*.05,Math.sin(t*.31+A.ph)*.07,A.s*Math.sin(t*.37+A.ph*.7)*.06);});
       const tw=Math.pow(MX(0,Math.sin(t*.9+1)),30);twitch+=(tw-twitch)*MN(1,dt*8);
-      neck.rotation.set(-.04+Math.sin(t*.31)*.05,Math.sin(t*.19)*.12,Math.sin(t*.27)*.07+twitch*.12);
+      neck.rotation.set(.1+Math.sin(t*.31)*.04,Math.sin(t*.19)*.12,Math.sin(t*.27)*.07+twitch*.12);
       const scream=.5+.5*Math.sin(t*.42);
       jaw.rotation.x=.3+.32*scream*scream+twitch*.05*Math.sin(t*40);
       layLegs(t);
@@ -14165,220 +14384,889 @@ if(FX&&FX.prewarm){
 canvas.__kzWarm=true;
 }   /* boot */
 };
+/*<<HEART>>*/
 /* ================================================================
-   HEART OF NIHILISM — a dark heart beating in the void
-   · anatomical form: two ventricles, the atria, a groove, an apex
-   · wet black flesh; violet veins that burn on every beat
-   · five eyes grown into it, lids of flesh, watching you
-   · bound by chains, held by roots and vessels running into the dark,
-     light flowing through them toward the heart
-   · black blood drips from the apex
+   HEART OF NIHILISM — a real human heart, and the void eating it
+   · anatomy: one seamless SDF sculpt (KORZ_BEASTS._sculpt, meshed in
+     idle slices) — both ventricles and the interventricular grooves,
+     both atria with their auricles, the aortic arch and its three
+     branches, the pulmonary trunk and its split, the venae cavae, the
+     pulmonary veins; every vessel cut, its lumen open and black
+   · coronary arteries and veins raised in the grooves, lobules of
+     yellow epicardial fat; wet muscle under a glossy membrane
+     (clearcoat, wrap-lit "subsurface", spiralling fibre relief)
+   · lub-dub: the atria kick, then the ventricles wring (squeeze +
+     twist), all in the vertex shader; now and then it misses a beat
+   · the void: matte black that swallows the light, creeping over it in
+     tendrils and cracks, eating holes through the wall, a violet event
+     horizon at its edge; a shroud of black smoke; behind it a black
+     vortex bends violet light into a ring; ash drifts in
+   · black blood wells from the cut vessels and drips into the dark
    ================================================================ */
 (function(){
 'use strict';
 if(!window.THREE||!window.__HAS3D||!window.KORZ)return;
-const K=KORZ,T=THREE,V=K.V;
+const K=KORZ,T=THREE;
 const canvas=document.getElementById('c3dHeart'),band=document.getElementById('hon');
 if(!canvas||!band)return;
 const MOB=!!window.IS_MOBILE,CALM=!!window.__CALM;
 const force=/[?&]heart=1/.test(location.search);
+/* test hooks: __HEART.view={yaw,pitch,dist,look:[x,y,z],t} pins the camera (and time) */
+const HX=window.__HEART={view:null,stats:{}};
 let booted=false;
 /* built in idle slices with the other chapters (AOSO_FX.sched), shaders compiled before it shows */
 const SCH=window.AOSO_FX&&AOSO_FX.sched;
-if(SCH)SCH.add(band,slice=>boot(slice),{now:force,margin:1200});
+if(SCH)SCH.add(band,slice=>boot(slice),{now:force,margin:1400});
 else if(force)boot();
-else{const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting&&!booted){io.disconnect();boot();}}),{rootMargin:'1200px 0px'});io.observe(band);}
+else{const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting&&!booted){io.disconnect();boot();}}),{rootMargin:'1400px 0px'});io.observe(band);}
 
 async function boot(slice){
 if(booted)return;
 booted=true;
-slice=slice||(()=>Promise.resolve());
+slice=slice||(()=>new Promise(r=>setTimeout(r,0)));
+const SK=window.KORZ_BEASTS&&KORZ_BEASTS._sculpt;
+if(!SK){console.warn('[HEART] sculpt kit missing');return;}
+const T0=performance.now();
 let renderer;
 try{renderer=new T.WebGLRenderer({canvas,antialias:!MOB,alpha:false,powerPreference:'high-performance'});}
 catch(e){if(window.__aoso3dFallback)__aoso3dFallback('heart: '+e.message);return;}
 const DPR=()=>Math.min(devicePixelRatio,MOB?1.5:2)*(window.__QUAL||1);
 renderer.setPixelRatio(DPR());
 if('outputColorSpace' in renderer&&T.SRGBColorSpace)renderer.outputColorSpace=T.SRGBColorSpace;
-renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
+renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=.95;
 const FX=window.AOSO_FX;
-if(FX)FX.attach(renderer,{strength:1,threshold:.72,knee:.45});
+if(FX)FX.attach(renderer,{strength:.48,threshold:.9,knee:.4});
 const scene=new T.Scene();
-scene.background=new T.Color(0x050308);
-scene.fog=new T.FogExp2(0x07040b,.055);
+scene.background=new T.Color(0x040307);
 await slice();
 if(FX)scene.environment=FX.env(renderer);
-const camera=new T.PerspectiveCamera(33,1,.1,120);
-await slice();
-const U=K.uniforms(0xb49bff);U.uKzReveal.value=1;
+const camera=new T.PerspectiveCamera(30,1,.1,80);
+const R=K.rng(1913);
 
-/* ---------- light ---------- */
-scene.add(new T.HemisphereLight(0x2a2040,0x080406,.2));
-const key=new T.DirectionalLight(0xe6dcff,.7);key.position.set(-3,4,5);scene.add(key);
-const rimV=new T.DirectionalLight(0x9a7aff,4.5);rimV.position.set(3.5,2.5,-4);scene.add(rimV);
-const rimR=new T.DirectionalLight(0xff3a3a,3.2);rimR.position.set(-4,-1.5,-3.5);scene.add(rimR);
-const flash=new T.PointLight(0xa070ff,0,6,2);flash.position.set(.4,.9,3.4);scene.add(flash);
+/* =================================================================
+   ANATOMY — world units; x = the heart's own left (the viewer's right),
+   y up, z toward the viewer: the classic anterior view
+   ================================================================= */
+const {P,add,sub,mul,dot,crs,nrm,lerp,ss}=SK;
+const MX=Math.max,MN=Math.min,ab=Math.abs,sq=Math.sqrt,D2R=Math.PI/180;
+const f4=x=>(+x).toFixed(4),g3=a=>'vec3('+f4(a[0])+','+f4(a[1])+','+f4(a[2])+')';
+/* the heart's frame: VA runs up the long axis from the apex to the base (down, left, forward
+   is where the apex points), UU across it toward the left ventricle, WW out of the front */
+const TH=29*D2R,PH=19*D2R;
+const AXd=nrm([Math.sin(TH)*Math.cos(PH),-Math.cos(TH)*Math.cos(PH),Math.sin(PH)]);
+const VA=mul(AXd,-1),UU=nrm(crs(VA,[0,0,1])),WW=crs(UU,VA);
+const BC=[-.08,.24,-.02];
+const HF=(x,y,z)=>add(add(add(BC,UU,x),VA,y),WW,z);
+const OE=(c,a,hint,r)=>{const v=nrm(a),u=nrm(sub(hint,mul(v,dot(hint,v))));return P.oell(c,u,v,crs(u,v),r);};
+const hfr=p=>{const q=sub(p,BC),h=dot(q,VA),xu=dot(q,UU),yw=dot(q,WW);return {h,phi:Math.atan2(yw,xu),rr:sq(xu*xu+yw*yw)};};
+const radial=phi=>add(mul(UU,Math.cos(phi)),WW,Math.sin(phi));
+const avH=phi=>.1+.05*Math.sin(phi)+.03*Math.cos(2*phi);            /* the atrioventricular groove, in the heart's frame */
 
-/* ---------- the heart's shape ---------- */
-const bumps=[[V(-.45,.78,-.34).normalize(),.36,.2],[V(.52,.7,-.3).normalize(),.32,.16],[V(.35,-.1,.85).normalize(),.55,.09],[V(-.75,-.25,.35).normalize(),.5,.11],[V(.1,.55,.6).normalize(),.3,.06]];
-const gN=V(1,.38,.28).normalize();
-function radius(d){
-  let r=1;
-  bumps.forEach(([c,w,h])=>{const a=Math.acos(Math.max(-1,Math.min(1,d.dot(c))));r+=h*Math.exp(-Math.pow(a/w,2));});
-  const gd=d.dot(gN);r-=.07*Math.exp(-Math.pow(gd/.07,2))*(d.z>0?1:.35);
-  r+=(K.fbm(d.x*2.4+3,d.y*2.4,d.z*2.4,3)-.5)*.07;
-  return r;
-}
-function shape(d,out){
-  const r=radius(d);let x=d.x*r,y=d.y*r*1.16,z=d.z*r;
-  const t=Math.max(0,Math.min(1,(.2-y)/1.25));
-  x*=1-t*.52;z*=1-t*.42;x-=t*t*.38;y-=t*t*.12;
-  return out.set(x,y,z).multiplyScalar(.95);
-}
-const heart=new T.Group();heart.rotation.set(.08,-.25,.22);scene.add(heart);
+/* ventricles: the left one long and conical, making the apex; the right one a flatter
+   crescent wrapped over its front, rising into the conus toward the pulmonary valve */
+const PV=[.14,.4,.32];
+const VL=[[OE(HF(.2,-.7,-.1),VA,UU,[.54,.84,.5]),0],[P.cone(HF(.18,-.36,-.08),HF(.1,-1.47,.04),.48,.06),.3]];
+const VR=[[OE(HF(-.21,-.47,.19),add(VA,UU,-.2),UU,[.54,.72,.42]),.07],[P.cone(HF(-.1,-.3,.27),PV,.32,.19),.12]];
+/* atria: the right one forms the right border, its auricle a flap over the aortic root;
+   the left one sits behind, its auricle curling round the pulmonary trunk */
+const AR=[[P.ell([-.66,.25,-.02],[.36,.5,.4],[0,0,.12]),.11],[OE([-.36,.6,.3],[.8,.45,.25],[-.2,.3,1],[.09,.25,.2]),.06],[OE([-.2,.66,.38],[.7,.2,.3],[-.2,.4,1],[.065,.12,.12]),.04]];
+const AL=[[P.ell([.08,.42,-.5],[.5,.3,.3]),.11],[P.ell([-.3,.4,-.35],[.3,.3,.28]),.1],[OE([.58,.47,.2],[-.2,-.3,.9],[.9,.1,.2],[.085,.23,.18]),.05],[OE([.49,.38,.38],[-.3,-.4,.8],[.9,.1,.2],[.065,.1,.12]),.035]];
+/* great vessels: A arteries (pale, thick-walled), V veins (dark, thin), L the ligament */
+const VES=[
+  {id:'ao',t:'A',k:.08,cut:1,pts:[[.02,.42,.08,.2],[-.07,.85,.12,.2],[-.05,1.2,.05,.195],[.08,1.46,-.1,.19],[.3,1.56,-.28,.185],[.52,1.43,-.45,.18],[.62,1.1,-.6,.175],[.64,.62,-.72,.17],[.62,.2,-.85,.168],[.6,-.14,-.92,.165]]},
+  {id:'bct',t:'A',k:.05,cut:1,pts:[[.06,1.5,-.05,.1],[-.06,1.85,-.02,.09],[-.15,2.12,0,.085]]},
+  {id:'lcc',t:'A',k:.05,cut:1,pts:[[.27,1.6,-.22,.072],[.29,1.95,-.2,.066],[.3,2.14,-.19,.063]]},
+  {id:'lsa',t:'A',k:.05,cut:1,pts:[[.43,1.55,-.36,.076],[.56,1.88,-.4,.07],[.65,2.06,-.42,.067]]},
+  {id:'pt',t:'A',k:.08,cut:0,pts:[[.14,.36,.3,.19],[.24,.68,.37,.185],[.3,.95,.2,.175],[.31,1.04,0,.17]]},
+  {id:'lpa',t:'A',k:.04,cut:1,pts:[[.31,1.04,0,.14],[.58,1.1,-.12,.125],[.87,1.06,-.2,.12]]},
+  {id:'rpa',t:'A',k:.04,cut:1,pts:[[.31,1.04,0,.14],[0,1.02,-.25,.13],[-.4,.98,-.42,.125],[-.8,.95,-.45,.12]]},
+  {id:'svc',t:'V',k:.1,cut:1,pts:[[-.6,.55,-.06,.15],[-.58,1.05,-.08,.145],[-.56,1.5,-.1,.14]]},
+  {id:'ivc',t:'V',k:.1,cut:1,pts:[[-.52,.02,-.3,.15],[-.5,-.25,-.34,.145],[-.49,-.42,-.35,.14]]},
+  {id:'lspv',t:'V',k:.06,cut:1,pts:[[.42,.55,-.6,.075],[.7,.6,-.72,.07],[.88,.62,-.77,.068]]},
+  {id:'lipv',t:'V',k:.06,cut:1,pts:[[.42,.32,-.62,.075],[.72,.3,-.74,.07],[.88,.28,-.79,.068]]},
+  {id:'rspv',t:'V',k:.06,cut:1,pts:[[-.15,.55,-.64,.075],[-.42,.6,-.78,.07],[-.58,.62,-.83,.068]]},
+  {id:'ripv',t:'V',k:.06,cut:1,pts:[[-.15,.32,-.66,.075],[-.42,.3,-.8,.07],[-.58,.28,-.85,.068]]},
+  {id:'lig',t:'L',k:.02,cut:0,pts:[[.33,1.1,-.06,.022],[.38,1.36,-.28,.022]]}
+];
+VES.forEach(v=>{v.prim=P.chain(v.pts,.03);v.f=SK.sculpt([['u',v.prim,0]]);});
+const ROOT=P.ell([0,.46,.1],[.24,.2,.24]);                              /* aortic root: the sinuses */
+const L=[];const U_=(p,k)=>L.push(['u',p,k||0]);
+VL.forEach(o=>U_(o[0],o[1]));VR.forEach(o=>U_(o[0],o[1]));
+AR.forEach(o=>U_(o[0],o[1]));AL.forEach(o=>U_(o[0],o[1]));
+VES.forEach(v=>U_(v.prim,v.k));U_(ROOT,.07);
+const baseF=SK.sculpt(L.slice());
+const sdfV=SK.sculpt(VL.concat(VR).map((o,i)=>['u',o[0],i?o[1]:0]));
+const sdfRA=SK.sculpt(AR.map((o,i)=>['u',o[0],i?o[1]:0])),sdfLA=SK.sculpt(AL.map((o,i)=>['u',o[0],i?o[1]:0]));
+const sdfLV=SK.sculpt(VL.map((o,i)=>['u',o[0],i?o[1]:0])),sdfRV=SK.sculpt(VR.map((o,i)=>['u',o[0],i?o[1]:0]));
 await slice();
-const hg=new T.SphereGeometry(1,MOB?96:140,MOB?72:104);
-{const p=hg.attributes.position,d=new T.Vector3(),o=new T.Vector3();for(let i=0;i<p.count;i++){d.fromBufferAttribute(p,i).normalize();shape(d,o);p.setXYZ(i,o.x,o.y,o.z);}K.smoothNormals(hg);}
-const fleshMat=new T.MeshPhysicalMaterial({color:0x13050a,roughness:.36,metalness:0,clearcoat:.9,clearcoatRoughness:.22,sheen:.7,sheenColor:new T.Color(0x6a1a34),sheenRoughness:.45,envMapIntensity:.55});
-fleshMat.onBeforeCompile=sh=>{
-  sh.vertexShader=sh.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>
-    transformed+=normal*(sin(position.y*7.+uKzTime*1.7)*.006+sin(position.x*9.-uKzTime*1.3)*.004+uKzPulse*.012*sin(position.y*14.));`);
+
+/* first surface crossing going out from c along dir (a flap hanging over a groove is not "the surface") */
+function outward(F,c,dir,t1){
+  let t=0;const st=.02;
+  while(t<t1&&F(c[0]+dir[0]*t,c[1]+dir[1]*t,c[2]+dir[2]*t)<0)t+=st;
+  let a=MX(0,t-st),b=t;
+  for(let i=0;i<7;i++){const m=(a+b)/2;if(F(c[0]+dir[0]*m,c[1]+dir[1]*m,c[2]+dir[2]*m)<0)a=m;else b=m;}
+  return add(c,dir,(a+b)/2);
+}
+const surfAt=(F,h,phiDeg)=>outward(F,HF(0,h,0),radial(phiDeg*D2R),2.2);
+/* the interventricular grooves: where the two ventricles meet on the surface, front and back */
+function groove(a0,b0){
+  const out=[];
+  for(let h=.04;h>-1.46;h-=.075){
+    const s=phi=>{const p=surfAt(baseF,h,phi);return sdfLV(p[0],p[1],p[2])-sdfRV(p[0],p[1],p[2]);};
+    let a=a0,b=b0;const sa=s(a),sb=s(b);
+    if(!(sa<0&&sb>0))break;
+    for(let i=0;i<9;i++){const m=(a+b)/2;if(s(m)<0)a=m;else b=m;}
+    out.push(surfAt(baseF,h,(a+b)/2));
+  }
+  return out;
+}
+const GA=groove(5,175),GP=groove(-5,-175);
+await slice();
+/* distance to a polyline, with a cheap box reject */
+function poly(pts){let lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];pts.forEach(p=>{for(let j=0;j<3;j++){lo[j]=MN(lo[j],p[j]);hi[j]=MX(hi[j],p[j]);}});return {pts,lo,hi};}
+function polyD(Pl,x,y,z,cap){
+  if(x<Pl.lo[0]-cap||y<Pl.lo[1]-cap||z<Pl.lo[2]-cap||x>Pl.hi[0]+cap||y>Pl.hi[1]+cap||z>Pl.hi[2]+cap)return cap;
+  let best=cap*cap;const p=Pl.pts;
+  for(let i=0;i<p.length-1;i++){
+    const a=p[i],b=p[i+1],bx=b[0]-a[0],by=b[1]-a[1],bz=b[2]-a[2],px=x-a[0],py=y-a[1],pz=z-a[2];
+    const t=MX(0,MN(1,(px*bx+py*by+pz*bz)/(bx*bx+by*by+bz*bz||1)));
+    const dx=px-bx*t,dy=py-by*t,dz=pz-bz*t,d=dx*dx+dy*dy+dz*dz;if(d<best)best=d;
+  }
+  return sq(best);
+}
+const PGA=poly(GA),PGP=poly(GP);
+const grooveD=(x,y,z)=>MN(GA.length>1?polyD(PGA,x,y,z,.2):.2,GP.length>1?polyD(PGP,x,y,z,.2):.2);
+/* grooves pressed into the surface: the coronary sulcus all round, the two interventricular ones */
+L.push(['fn',(d,x,y,z)=>{
+  const qx=x-BC[0],qy=y-BC[1],qz=z-BC[2],h=qx*VA[0]+qy*VA[1]+qz*VA[2];
+  if(h<-1.75||h>.55)return d;
+  const xu=qx*UU[0]+qy*UU[1]+qz*UU[2],yw=qx*WW[0]+qy*WW[1]+qz*WW[2],rr=sq(xu*xu+yw*yw),phi=Math.atan2(yw,xu);
+  const e=(h-avH(phi))/.055;
+  let c=.03*Math.exp(-e*e)*ss(.32,.55,rr);
+  const g=grooveD(x,y,z)/.045;c+=.024*Math.exp(-g*g);
+  return d+c;
+}]);
+/* the muscle is never quite smooth */
+L.push(['fn',(d,x,y,z)=>d+(K.n3(x*5.2+11,y*5.2,z*5.2)-.5)*.02+(K.n3(x*12.5,y*12.5+5,z*12.5)-.5)*.007]);
+/* lobules of epicardial fat in the grooves and round the roots of the great arteries */
+const gradB=p=>SK.grad(baseF,p);
+const FATP=[];
+function lobe(p,r){const n=gradB(p);L.push(['u',P.sph(add(p,n,-r*.42),r),.028]);FATP.push([p,r]);}
+for(let ph=-178;ph<178;ph+=11+R()*5){if(ph>70&&ph<110)continue;lobe(surfAt(baseF,avH(ph*D2R)+(R()-.5)*.05,ph),.042+R()*.034);}
+GA.slice(0,Math.ceil(GA.length*.5)).forEach((p,i)=>lobe(p,(.05-i*.003)*(.8+R()*.4)));
+GP.slice(0,Math.ceil(GP.length*.45)).forEach((p,i)=>lobe(p,(.045-i*.003)*(.8+R()*.4)));
+[[.02,.62,.3],[.32,.5,.42],[-.12,.55,.33],[.05,.72,.3],[.28,.3,.44]].forEach(q=>{const n=gradB(q);lobe(outward(baseF,sub(q,mul(n,.3)),n,.6),.05+R()*.02);});
+await slice();
+/* an eye grown into the wall of the right ventricle, lidded with the heart's own flesh */
+const EYE=[];
+[[-.2,120,.1]].forEach(([h,ph,re])=>{
+  const p0=surfAt(baseF,h,ph),n=gradB(p0),u=nrm(crs([0,1,0],n)),v=crs(n,u);
+  L.push(['u',P.oell(add(add(p0,v,re*.6),n,-re*.02),u,v,n,[re*1.35,re*.5,re*.42]),.035]);
+  L.push(['u',P.oell(add(add(p0,v,-re*.66),n,-re*.05),u,v,n,[re*1.2,re*.38,re*.34]),.035]);
+  L.push(['s',P.oell(add(p0,n,re*.1),u,v,n,[re*1.08,re*.44,re*.95]),.016]);
+  EYE.push({p0,n,u,v,re,c:add(p0,n,-re*.66)});
+});
+const nearEye=q=>EYE.some(e=>{const dx=q[0]-e.p0[0],dy=q[1]-e.p0[1],dz=q[2]-e.p0[2];return dx*dx+dy*dy+dz*dz<(e.re*2.1)*(e.re*2.1);});
+/* every vessel cut — torn rather than sliced: a ragged end, the lumen open */
+const CUTS=[];
+VES.forEach(v=>{
+  if(!v.cut)return;
+  const n=v.pts.length,tip=v.pts[n-1].slice(0,3),dir=nrm(sub(tip,v.pts[n-2].slice(0,3))),r=v.pts[n-1][3];
+  const hint=ab(dir[1])<.9?[0,1,0]:[1,0,0],u=nrm(sub(hint,mul(dir,dot(hint,dir)))),w=crs(u,dir);
+  const rl=r-MX(r*.3,.034),dep=.16+r*.9,R2=(r*1.5)*(r*1.5),sd=R()*50;
+  L.push(['fn',(d,x,y,z)=>{
+    const px=x-tip[0],py=y-tip[1],pz=z-tip[2],s=px*dir[0]+py*dir[1]+pz*dir[2];
+    if(s<-.09||s>r+.05)return d;
+    const qx=px-dir[0]*s,qy=py-dir[1]*s,qz=pz-dir[2]*s;if(qx*qx+qy*qy+qz*qz>R2)return d;
+    const jag=(K.n3(x*17+sd,y*17,z*17)-.5)*.07+(K.n3(x*41,y*41+sd,z*41)-.5)*.025;
+    return MX(d,s-jag);
+  }]);
+  L.push(['s',P.cone(add(tip,dir,.1),add(tip,dir,-dep),rl,rl*.9),.01]);
+  CUTS.push({id:v.id,t:v.t,tip,dir,r,rl,dep,u,w});
+});
+const F=SK.sculpt(L);
+
+/* ---------- where things are: regions for the beat, colour for the paint ---------- */
+const reg=[0,0,0,0];
+function region(x,y,z,o){
+  const dV=sdfV(x,y,z),dR=sdfRA(x,y,z),dL=sdfLA(x,y,z),dA=MN(dR,dL),dB=MN(dV,dA);
+  const ves=ss(.04,.1,dB),wv=ss(.05,-.05,dV-dA)*(1-ves);
+  o[0]=wv;o[1]=(1-ves)*(1-wv);o[2]=ves;o[3]=ss(-.06,.06,dR-dL);
+  return dB;
+}
+const STREAKS=[   /* black blood run down from the cut mouths: origin, facing, length, width */
+  {o:[-.15,2.1,.08],n:[.2,0,1],L:.55,w:.034},{o:[-.56,1.48,.03],n:[-.2,0,1],L:.8,w:.04},
+  {o:[.84,1.0,-.1],n:[.5,0,.85],L:.45,w:.03},{o:[.9,.58,-.7],n:[.8,0,.6],L:.4,w:.026}
+].map(s=>{s.n=nrm(s.n);s.lat=nrm(crs([0,1,0],s.n));s.ph=R()*9;return s;});
+function streak(x,y,z,nx,ny,nz){
+  let m=0;
+  for(const s of STREAKS){
+    const dy=s.o[1]-y;if(dy<-.02||dy>s.L)continue;
+    if(nx*s.n[0]+ny*s.n[1]+nz*s.n[2]<.15)continue;
+    const u=dy/s.L,lat=(x-s.o[0])*s.lat[0]+(z-s.o[2])*s.lat[2]-(K.n3(dy*5,s.ph,1)-.5)*.09*u;
+    const w=s.w*(1.25-u*.8)*(.6+.8*K.n3(dy*11,s.ph,0))+ss(.8,1,u)*s.w*.5*ss(.4,.8,K.n3(dy*3,s.ph,5));
+    m=MX(m,ss(w,w*.3,ab(lat))*ss(1,.8,u+K.n3(dy*6,s.ph,3)*.2));
+  }
+  return m;
+}
+const COL={lv:[.13,.012,.014],rv:[.105,.01,.013],ra:[.05,.008,.016],la:[.06,.009,.015],art:[.2,.1,.08],vein:[.04,.01,.026],fat:[.3,.17,.042],lum:[.003,.001,.0015],cut:[.22,.09,.08],blk:[.004,.0025,.0035]};
+const REG=[];
+function paint(x,y,z,nx,ny,nz,oc,o){
+  const dB=region(x,y,z,reg);REG.push(reg[0],reg[1],reg[2],reg[3]);
+  const mot=.72+.56*K.fbm(x*3.3+7,y*3.3,z*3.3,2);
+  let c=lerp(lerp(COL.ra,COL.la,reg[3]),lerp(COL.rv,COL.lv,ss(-.02,.06,sdfRV(x,y,z)-sdfLV(x,y,z))),reg[0]/(reg[0]+reg[1]+1e-6));
+  c=mul(c,mot);
+  if(reg[2]>0){        /* which vessel */
+    let bd=1e9,bt='A';for(const v of VES){const d=v.f(x,y,z);if(d<bd){bd=d;bt=v.t;}}
+    const vc=bt==='V'?COL.vein:bt==='L'?COL.fat:COL.art;
+    c=lerp(c,mul(vc,.8+.4*K.fbm(x*6,y*6+3,z*6,2)),reg[2]);
+  }
+  /* fat: the grooves, the roots of the arteries, in patches */
+  let fat=0;
+  for(const q of FATP){const dx=x-q[0][0],dy=y-q[0][1],dz=z-q[0][2],d=sq(dx*dx+dy*dy+dz*dz);if(d<q[1]*2.4)fat=MX(fat,ss(q[1]*2.4,q[1]*1.1,d));}
+  const hf=hfr([x,y,z]);
+  fat=MX(fat,Math.exp(-Math.pow((hf.h-avH(hf.phi))/.09,2))*ss(.34,.52,hf.rr)*(1-reg[2]));
+  fat=MX(fat,ss(.09,.03,grooveD(x,y,z))*ss(-1.2,-.25,hf.h));
+  fat*=ss(.35,.62,K.fbm(x*5+2,y*5,z*5,2)+fat*.35);
+  c=lerp(c,mul(COL.fat,.75+.5*K.fbm(x*9,y*9,z*9+4,2)),fat);
+  let wet=0;
+  /* the cut mouths: the pale ring of the wall, the black inside */
+  for(const k of CUTS){
+    const px=x-k.tip[0],py=y-k.tip[1],pz=z-k.tip[2],s=px*k.dir[0]+py*k.dir[1]+pz*k.dir[2];
+    if(s<-k.dep-.05||s>.03)continue;
+    const rx=px-k.dir[0]*s,ry=py-k.dir[1]*s,rz=pz-k.dir[2]*s,rd=sq(rx*rx+ry*ry+rz*rz);
+    if(rd<k.rl+.015){const m=ss(k.rl+.015,k.rl-.01,rd);c=lerp(c,COL.lum,m);wet=MX(wet,m);fat*=1-m;}
+    else if(s>-.02&&rd<k.r+.02){const m=ss(-.02,.0,s);c=lerp(c,COL.cut,m*.85);fat*=1-m;}
+  }
+  const st=streak(x,y,z,nx,ny,nz);
+  c=lerp(c,COL.blk,st*.94);wet=MX(wet,st);
+  o[0]=c[0];o[1]=c[1];o[2]=c[2];o[3]=fat;o[4]=wet;
+}
+const HS=MOB?.033:.028;
+const bodyG=SK.build(F,[-1.15,-1.32,-1.2],[1.35,2.42,.98],HS,{mask:true,ao:1,aoStep:.035,aoK:1.1,aoMin:.28,paint});
+await slice();
+
+/* =================================================================
+   SHADERS — shared pieces
+   ================================================================= */
+const TV=.72,HOLE=TV+.3;               /* void threshold; beyond HOLE the wall is gone */
+const VSEED=[
+  [-.55,-.66,.3,.7],[.84,-.86,.38,.54],[-1.02,.36,-.12,.52],[.96,-.12,-.3,.62],[.45,1.62,-.35,.36],[.1,-.2,-.72,.9]
+].map(a=>{const c=[.1,.15,0],d=nrm(sub(a,c)),q=SK.hit(F,add(a,d,.6),mul(d,-1),1.6);return new T.Vector4(q[0],q[1],q[2],a[3]);});
+const VS0=VSEED.map(v=>v.w);
+const HU={
+  uT:{value:0},uSA:{value:0},uSV:{value:0},uQv:{value:0},uVoid:{value:0},uVS:{value:VSEED},
+  uKeyV:{value:new T.Vector3(0,0,1)},uRimV:{value:new T.Vector3(0,0,-1)}
 };
-fleshMat.customProgramCacheKey=()=>'heart-flesh';
-K.veins(fleshMat,U,{color:0xa24cff,k:1.1,scale:2.3,sharp:11,base:.1,beat:2.4});
-const body=new T.Mesh(hg,fleshMat);heart.add(body);
-
-/* ---------- vessels and roots, light flowing inward ---------- */
-function vesselMat(col,k){
-  const m=new T.MeshPhysicalMaterial({color:0x1a080e,roughness:.4,clearcoat:.7,clearcoatRoughness:.3,sheen:.5,sheenColor:new T.Color(0x5a1a2a),envMapIntensity:.5});
-  const c=new T.Color(col);
-  return K.reveal(m,U,sh=>{
-    sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying float vFl;').replace('#include <begin_vertex>','#include <begin_vertex>\nvFl=uv.x;');
-    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying float vFl;')
-      .replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
-        float _p=fract(vFl*3.-uKzTime*.55);
-        totalEmissiveRadiance+=vec3(${c.r.toFixed(3)},${c.g.toFixed(3)},${c.b.toFixed(3)})*(smoothstep(.14,0.,abs(_p-.5))*${k.toFixed(2)}+uKzPulse*.25);`);
-  },'vessel'+col+k);
+const RAc=[-.66,.28,-.02],LAc=[.08,.42,-.45];
+const HGL=`
+uniform float uT,uSA,uSV,uQv,uVoid;uniform vec4 uVS[6];
+const vec3 hBC=${g3(BC)},hVA=${g3(VA)},hUU=${g3(UU)},hWW=${g3(WW)},hRA=${g3(RAc)},hLA=${g3(LAc)};
+float hH(vec3 p){p=fract(p*.3183099+.1);p*=17.;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
+float hN(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*(3.-2.*f);
+ return mix(mix(mix(hH(i),hH(i+vec3(1,0,0)),f.x),mix(hH(i+vec3(0,1,0)),hH(i+vec3(1,1,0)),f.x),f.y),
+            mix(mix(hH(i+vec3(0,0,1)),hH(i+vec3(1,0,1)),f.x),mix(hH(i+vec3(0,1,1)),hH(i+vec3(1,1,1)),f.x),f.y),f.z);}
+float hR(vec3 p){return 1.-abs(hN(p)*2.-1.);}
+/* how far the void has eaten into a point (> ${TV} = gone) */
+float voidReach(vec3 p){float s=0.;for(int i=0;i<6;i++){vec3 d=p-uVS[i].xyz;float w=uVS[i].w*(i==5?1.05:1.5);s=max(s,exp(-dot(d,d)/(w*w)));}return s+uVoid*.5;}
+float voidF(vec3 p){
+  vec3 w=p*1.55+vec3(0.,uT*.018,-uT*.011);
+  vec3 wp=vec3(hN(w*1.2+vec3(0.,0.,uT*.04)),hN(w*1.2+vec3(7.3,1.1,-uT*.035)),hN(w*1.2+vec3(3.1,9.7,uT*.03)))-.5;
+  vec3 ww=w+wp*1.3;
+  float n=hN(ww)*.6+hN(ww*2.2)*.3+hN(ww*5.1)*.1;
+  float s=0.;
+  for(int i=0;i<6;i++){vec3 d=p-uVS[i].xyz;s=max(s,exp(-dot(d,d)/(uVS[i].w*uVS[i].w)));}
+  float td=pow(hR(ww*1.7),6.);
+  return s*1.18+(n-.5)*.6+td*.36*smoothstep(.02,.45,s)+uVoid;
 }
-const vMat=vesselMat(0xa24cff,1.15),rMat=vesselMat(0xff2a3a,.9);
-const P=(x,y,z)=>V(x,y,z);
-await slice();
-/* great vessels out of the top */
-[
-  [[P(.08,.9,-.05),P(.16,1.45,.02),P(-.2,1.9,-.08),P(-.7,1.8,-.3),P(-1.1,1.1,-.6),P(-1.6,-1.6,-1.8),P(-2.2,-5,-3)],.2,.13,vMat],
-  [[P(-.22,.78,.36),P(-.4,1.35,.5),P(-.9,1.75,.4),P(-2,2.3,-.2),P(-4.5,3.2,-2)],.16,.08,vMat],
-  [[P(-.3,1.3,.45),P(.1,1.9,.6),P(.9,2.3,.2),P(2.4,3,-.8),P(5,4.2,-2.5)],.12,.06,vMat],
-  [[P(.55,.86,-.12),P(.62,1.5,-.1),P(.7,2.6,-.4),P(.9,5,-1.4)],.15,.1,rMat],
-  [[P(.62,-.3,-.35),P(.9,-1.2,-.5),P(1.2,-2.6,-.9),P(1.6,-5,-1.8)],.13,.09,rMat],
-  [[P(-.15,1.85,-.1),P(-.1,2.6,-.2),P(.1,4,-.6),P(.3,6,-1.2)],.08,.05,rMat],
-  [[P(-.45,1.85,-.2),P(-.8,2.7,-.4),P(-1.3,4.2,-1),P(-1.6,6,-1.8)],.07,.04,vMat]
-].forEach(([pts,r0,r1,m])=>heart.add(new T.Mesh(K.tube(pts,r0,r1,{seg:60,rs:14}),m)));
-/* roots: thin veins holding it in the void */
-await slice();
-{const R=K.rng(29);
- for(let i=0;i<(MOB?9:16);i++){
-   const a=Math.PI*(.15+R()*1.7),e=(R()-.5)*1.5;const d=V(Math.cos(a)*Math.cos(e),Math.sin(e),-Math.abs(Math.sin(a))*Math.cos(e)*.9-.1).normalize();   /* away from the viewer */
-   const s0=shape(d.clone(),new T.Vector3()).multiplyScalar(.98);
-   const pts=[s0];let p=s0.clone(),dir=d.clone();
-   for(let k=0;k<5;k++){dir.add(V((R()-.5)*.7,(R()-.5)*.7,(R()-.5)*.7)).normalize();p=p.clone().addScaledVector(dir,.7+R()*1.1);pts.push(p);}
-   heart.add(new T.Mesh(K.tube(pts,.022+R()*.018,.004,{seg:48,rs:7}),R()>.5?vMat:rMat));
- }}
+/* lub-dub: r = (ventricle, atrium, vessel, right->left atrium) */
+void heartBeat(inout vec3 p,inout vec3 n,vec4 r){
+  vec3 q=p-hBC;float h=dot(q,hVA);vec3 rd=q-hVA*h;
+  float dep=clamp(-h/1.55,0.,1.);
+  float sv=uSV*r.x;
+  float ang=sv*.23*dep;float c=cos(ang),s=sin(ang);
+  vec3 rd2=rd*c+cross(hVA,rd)*s;
+  rd2*=1.-sv*(.095+.05*dep);
+  float h2=h+sv*(.12*dep-.035);
+  p=hBC+hVA*h2+rd2;
+  n=n*c+cross(hVA,n)*s+hVA*dot(hVA,n)*(1.-c);
+  vec3 ac=mix(hRA,hLA,r.w);
+  p=mix(p,ac,uSA*r.y*.11);
+  p+=n*(r.z*max(uSV,0.)*.024);
+  p+=n*uQv*.007*sin(dot(q,vec3(23.,31.,17.))+uT*38.)*(r.x+r.y);
+}`;
+/* a wet, fleshy physical material that beats and is eaten by the void.
+   o: {am: has fat/wet masks, fib: fibre relief, fat: fat lobules, col: flat colour (no vertex colours)} */
+function flesh(o){
+  const m=new T.MeshPhysicalMaterial({color:o.col!=null?o.col:0xffffff,vertexColors:!!o.vc,roughness:o.rough||.5,metalness:0,
+    clearcoat:1,clearcoatRoughness:.1,sheen:.18,sheenRoughness:.45,sheenColor:new T.Color(0x6a0c1c),envMapIntensity:.22,side:o.double?T.DoubleSide:T.FrontSide});
+  m.onBeforeCompile=sh=>{
+    Object.assign(sh.uniforms,HU);
+    sh.vertexShader=sh.vertexShader
+      .replace('#include <common>','#include <common>\nattribute vec4 aR;'+(o.am?'attribute vec2 aM;':'')+'\nvarying vec2 vM;varying vec3 vOP;varying float vVm;varying float vRc;varying vec4 vR;\n'+HGL)
+      .replace('#include <beginnormal_vertex>',`vec3 _hp=position,_hn=normal;
+        float _vm=voidF(position);
+        heartBeat(_hp,_hn,aR);
+        _hp+=_hn*.013*smoothstep(${f4(TV)},${f4(TV+.12)},_vm);
+        vec3 objectNormal=_hn;
+        #ifdef USE_TANGENT
+        vec3 objectTangent=vec3(tangent.xyz);
+        #endif`)
+      .replace('#include <begin_vertex>','vec3 transformed=_hp;vOP=position;vVm=_vm;vRc=voidReach(position);vR=aR;vM='+(o.am?'aM':'vec2(0.,'+f4(o.wet||0)+')')+';');
+    sh.fragmentShader=sh.fragmentShader
+      .replace('#include <common>','#include <common>\nvarying vec2 vM;varying vec3 vOP;varying float vVm;varying float vRc;varying vec4 vR;uniform vec3 uKeyV,uRimV;\n'+HGL)
+      .replace('#include <clipping_planes_fragment>',`#include <clipping_planes_fragment>
+        float hvm=vVm+(hN(vOP*17.)-.5)*.1+(hN(vOP*43.)-.5)*.04;
+        if(hvm>${f4(HOLE)}&&gl_FrontFacing)discard;
+        float hIn=smoothstep(${f4(TV-.012)},${f4(TV+.012)},hvm);
+        float hEdge=exp(-pow((hvm-${f4(TV)})/.028,2.));
+        float hNear=smoothstep(${f4(TV-.26)},${f4(TV-.01)},hvm);
+        vec3 hq=vOP+(vec3(hN(vOP*3.1),hN(vOP*3.1+7.),hN(vOP*3.1+13.))-.5)*.25;
+        float hCrack=max(smoothstep(.9,.975,hR(hq*5.2)),smoothstep(.925,.985,hR(hq*12.3+4.))*.85)*smoothstep(${f4(TV-.5)},${f4(TV-.05)},hvm)*(1.-vR.z);
+        float hFat=vM.x,hWet=vM.y;`)
+      .replace('#include <color_fragment>',`#include <color_fragment>
+        ${o.fat?`vec3 fG=vec3(0.);float fId=0.;
+        if(hFat>.01){vec3 fp=vOP*34.,fi=floor(fp),ff=fract(fp);float F1=8.;vec3 r1=vec3(0.);
+          for(int k=-1;k<=1;k++)for(int j=-1;j<=1;j++)for(int l=-1;l<=1;l++){vec3 b=vec3(float(l),float(j),float(k));
+            vec3 hh=vec3(hH(fi+b),hH(fi+b+19.1),hH(fi+b+37.7));vec3 rr=b+.1+hh*.8-ff;float d=dot(rr,rr);if(d<F1){F1=d;r1=rr;fId=hh.x;}}
+          F1=sqrt(F1);fG=r1/max(F1,1e-3)*(1.-F1)*34.*.0016*hFat;
+          diffuseColor.rgb*=mix(1.,(.78+.44*fId)*(.8+.3*(1.-F1)),hFat);}`:''}
+        float hBr=smoothstep(.55,.8,hN(vOP*2.3+7.)*.7+hN(vOP*6.1)*.3);
+        diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.55,.42,.7),hBr*.6*(1.-hFat)*(1.-vR.z));
+        diffuseColor.rgb*=.82+.36*hN(vOP*14.+3.);
+        float hCap=pow(max(hR(vOP*8.3),hR(vOP*19.7+4.)*.95),12.);
+        diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.45,.3,.5),hCap*.55*(1.-hFat)*(1.-hWet));
+        diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.025,.007,.016)*(.6+.8*hN(vOP*9.)),hNear*.85);
+        diffuseColor.rgb*=1.-hCrack*.97;
+        ${o.vc?'':'diffuseColor.rgb*=1.-smoothstep(.16,.55,vRc+(hN(vOP*3.)-.5)*.25)*.93;'}
+        diffuseColor.rgb*=1.-hIn;`)
+      .replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
+        roughnessFactor=mix(roughnessFactor,.45,hFat);
+        roughnessFactor=mix(roughnessFactor,.1,hWet);
+        roughnessFactor=mix(roughnessFactor,1.,max(max(hIn,hCrack*.4),hNear*.5));`)
+      .replace('#include <normal_fragment_maps>',`#include <normal_fragment_maps>
+        {vec3 g=vec3(0.);
+         ${o.fib?`vec3 q=vOP-hBC;float hh=dot(q,hVA);vec3 rd=q-hVA*hh;float xu=dot(rd,hUU),yw=dot(rd,hWW),r2=xu*xu+yw*yw+.015;
+         float ph=atan(yw,xu);
+         float arg=ph*118.+hh*170.+hN(vOP*3.7)*6.+hN(vOP*11.)*2.4;
+         vec3 gA=118.*(xu*hWW-yw*hUU)/r2+170.*hVA;
+         float aa=clamp(1.4-fwidth(arg)*.5,0.,1.);
+         float arg2=arg*3.1+hN(vOP*23.)*4.;
+         float aa2=clamp(1.4-fwidth(arg2)*.5,0.,1.);
+         g+=gA*(cos(arg)*.00026*aa*smoothstep(.3,.8,hN(vOP*4.1+2.))+cos(arg2)*3.1*.00007*aa2)*(1.-hFat)*(1.-vR.z*.8)*(1.-hWet);`:''}
+         ${o.fat?'g+=fG;':''}
+         g*=1.-hIn;
+         vec3 gv=mat3(viewMatrix)*g;normal=normalize(normal-(gv-dot(gv,normal)*normal));}`)
+      .replace('#include <clearcoat_normal_fragment_maps>',`#include <clearcoat_normal_fragment_maps>
+        {vec3 gp=vOP*21.;vec3 gg=vec3(hN(gp),hN(gp+13.1),hN(gp+27.7))-.5;vec3 gv=mat3(viewMatrix)*gg*.055*(1.-hIn);
+         clearcoatNormal=normalize(clearcoatNormal-(gv-dot(gv,clearcoatNormal)*clearcoatNormal));}`)
+      .replace('#include <lights_physical_fragment>',`#include <lights_physical_fragment>
+        material.clearcoat*=(1.-hIn)*(1.-hNear*.65);
+        material.clearcoatRoughness=mix(mix(.085,.19,hN(vOP*5.3)),.06,hWet);
+        material.specularColor*=1.-hIn;material.specularF90*=1.-hIn;
+        #ifdef USE_SHEEN
+        material.sheenColor*=1.-hIn;
+        #endif`)
+      .replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
+        {vec3 vv=normalize(vViewPosition);float fr=1.-clamp(dot(normal,vv),0.,1.);
+         totalEmissiveRadiance+=vec3(.36,.16,1.)*(hEdge*.14+smoothstep(${f4(TV)},${f4(TV+.025)},hvm)*(1.-smoothstep(${f4(TV+.025)},${f4(TV+.07)},hvm))*.04+hIn*pow(fr,6.)*.1);
+         totalEmissiveRadiance+=vec3(.3,.16,.85)*pow(fr,4.5)*.22*(1.-hIn)*(.6+.4*hN(vOP*3.+uT*.05));}`)
+      .replace('#include <opaque_fragment>',`{vec3 vv=normalize(vViewPosition);float nv=clamp(dot(normal,vv),0.,1.);
+         float nl=dot(normal,uKeyV);
+         float wrap=max(0.,(nl+.55)/1.55)-max(0.,nl);
+         vec3 sss=vec3(1.,.09,.07)*wrap*.1*(1.-hFat*.3);
+         float bt=pow(clamp(dot(vv,-uRimV),0.,1.),2.)*pow(1.-nv,2.5);
+         sss+=vec3(.9,.06,.08)*bt*${o.vc?'.18':'.05'};
+         sss+=vec3(.5,.02,.02)*max(uSV,0.)*pow(1.-nv,2.)*.16;
+         outgoingLight+=sss*diffuseColor.a*(1.-hIn)*(1.-hNear*.7)*(1.-hWet*.8);
+         if(!gl_FrontFacing)outgoingLight=mix(outgoingLight*.3,vec3(.3,.12,.75)*pow(hN(vOP*38.+uT*.15),16.)*.6,smoothstep(${f4(TV)},${f4(HOLE)},hvm));}
+        #include <opaque_fragment>`);
+  };
+  m.customProgramCacheKey=()=>'heart|'+JSON.stringify(o);
+  return m;
+}
+const fleshM=flesh({vc:1,am:1,fib:MOB?0:1,fat:MOB?0:1,double:1,rough:.64});
+const heart=new T.Group();scene.add(heart);
+const body=new T.Mesh(bodyG,fleshM);body.frustumCulled=false;heart.add(body);
 
-/* ---------- eyes grown into the flesh ---------- */
+/* ---------- coronary arteries and veins, in the grooves, over the surface ---------- */
 await slice();
-const plainFlesh=K.reveal(new T.MeshPhysicalMaterial({color:0x1a070d,roughness:.4,clearcoat:.8,clearcoatRoughness:.25,sheen:.6,sheenColor:new T.Color(0x6a1a34),envMapIntensity:.5}),U);
-const eyes=[[.25,.05,1,.15],[-.55,-.15,.8,.11],[.72,.3,.55,.1],[-.2,.5,.85,.085],[.05,-.6,.9,.09]].map(([x,y,z,r],i)=>{
-  const d=V(x,y,z).normalize(),sp=shape(d.clone(),new T.Vector3());
-  const n=sp.clone().normalize();
-  const g=new T.Group();g.position.copy(sp).addScaledVector(n,-r*.35);heart.add(g);
-  const E=K.eye(r,0xffd87a,U,{glow:2.6,slit:.22,sclera:0x6e6152});g.add(E);
-  const L=K.lids(r,plainFlesh);g.add(L);
-  const rim=new T.Mesh(K.organic(new T.TorusGeometry(r*1.05,r*.28,12,32),r*.08,8,i),plainFlesh);g.add(rim);
-  g.userData={E,L,rim,n,ph:i*1.9,open:0};
-  return g;
+const gradF=p=>SK.grad(F,p);
+function onSurf(p){const n=gradF(p);return [SK.hit(F,add(p,n,.2),mul(n,-1),.5),n];}
+async function vessel(ctrl,r0,r1,mat,rise){
+  await slice();
+  const curve=new T.CatmullRomCurve3(ctrl.map(p=>new T.Vector3(p[0],p[1],p[2])),false,'centripetal');
+  const N=MX(8,Math.round(curve.getLength()/.035)),pts=[];
+  for(let i=0;i<=N;i++){const u=i/N,c=curve.getPointAt(u),[s,n]=onSurf([c.x,c.y,c.z]),r=r0+(r1-r0)*u;pts.push(new T.Vector3(...add(s,n,r*(rise||.5))));}
+  const prof=u=>(r0+(r1-r0)*u)*MN(1,.15+u*17);
+  const g=SK.tube(pts,prof,MN(100,Math.round(N*1.2)),MOB?4:5);
+  const pa=g.attributes.position,rg=new Float32Array(pa.count*4);
+  for(let i=0;i<pa.count;i++){region(pa.getX(i),pa.getY(i),pa.getZ(i),reg);rg.set(reg,i*4);}
+  g.setAttribute('aR',new T.BufferAttribute(rg,4));
+  const m=new T.Mesh(g,mat);m.frustumCulled=false;heart.add(m);VLIST.push({pts,r0,r1,mat});return m;
+}
+const VLIST=[];
+const artM=flesh({col:new T.Color(.26,.022,.024),wet:.3,rough:.38});
+const veinM=flesh({col:new T.Color(.07,.016,.05),wet:.35,rough:.36});
+const AVp=(a,b,st,dh)=>{const out=[];for(let ph=a;b>a?ph<=b:ph>=b;ph+=st)out.push(surfAt(baseF,avH(ph*D2R)+(dh||0),ph));return out;};
+const hp=(h,ph)=>surfAt(baseF,h,ph);
+/* left anterior descending, down the front groove round the apex; the great cardiac vein beside it */
+if(GA.length>3){
+  const lad=GA.slice(0);lad.push(hp(-1.52,60),hp(-1.56,10));
+  await vessel(lad,.027,.011,artM,.55);
+  await vessel(GA.map((p,i)=>add(p,UU,.05+.01*Math.sin(i))),.03,.014,veinM,.45);
+  const i1=MN(GA.length-1,Math.round(GA.length*.22)),i2=MN(GA.length-1,Math.round(GA.length*.5));
+  const hf1=hfr(GA[i1]),hf2=hfr(GA[i2]);
+  await vessel([GA[i1],hp(hf1.h-.12,hf1.phi/D2R-25),hp(hf1.h-.3,hf1.phi/D2R-50),hp(hf1.h-.5,hf1.phi/D2R-72)],.017,.007,artM);
+  await vessel([GA[i2],hp(hf2.h-.1,hf2.phi/D2R-22),hp(hf2.h-.28,hf2.phi/D2R-45),hp(hf2.h-.45,hf2.phi/D2R-60)],.015,.006,artM);
+  await vessel([GA[MN(GA.length-1,i1+1)],hp(hf1.h-.2,hf1.phi/D2R+20),hp(hf1.h-.4,hf1.phi/D2R+32)],.011,.005,artM);
+}
+await slice();
+/* right coronary: from the aortic root into the right groove, round the acute margin, to the back */
+await vessel([[-.04,.44,.3],...AVp(118,255,9,.01)],.028,.016,artM,.6);
+/* its marginal branch along the lower border toward the apex, and small branches over the right ventricle */
+await vessel([hp(avH(172*D2R),172),hp(-.2,168),hp(-.45,158),hp(-.72,146),hp(-.98,132),hp(-1.2,118)],.018,.007,artM);
+/* circumflex round the left, under the auricle; its obtuse marginal down the left border */
+await vessel([[.2,.42,.3],...AVp(62,-80,-10,.01)],.024,.012,artM,.6);
+await vessel([hp(avH(-8*D2R),-8),hp(-.25,-12),hp(-.55,-18),hp(-.85,-22),hp(-1.15,-20)],.017,.007,artM);
+/* posterior descending in the back groove, the middle cardiac vein beside it */
+if(GP.length>3){await vessel(GP,.02,.008,artM,.55);await vessel(GP.map(p=>add(p,UU,.045)),.024,.01,veinM,.45);}
+/* small cardiac veins over the right ventricle */
+await vessel([hp(-.95,150),hp(-.62,160),hp(-.3,166),hp(avH(170*D2R)-.02,170)],.014,.009,veinM);
+await vessel([hp(-1.05,40),hp(-.7,30),hp(-.35,22),hp(avH(18*D2R)-.02,18)],.016,.01,veinM);
+/* and everywhere, the small branches: they leave the big vessels and wander over the muscle */
+{
+  const geos=[];
+  for(const v of VLIST){
+    if(v.r0<.013)continue;
+    const nb=Math.round(v.pts.length/(MOB?9:5));
+    for(let b=0;b<nb;b++){
+      const i0=1+Math.floor(R()*(v.pts.length-3)),p0=v.pts[i0],tg=v.pts[i0+1].clone().sub(v.pts[i0-1]).normalize();
+      let p=[p0.x,p0.y,p0.z];const n0=gradF(p);let dir=nrm(add(mul(crs([tg.x,tg.y,tg.z],n0),R()<.5?1:-1),[tg.x,tg.y,tg.z],.6*(R()-.3)));
+      const tw=[];const L=MOB?4:6+Math.floor(R()*4),r=MN(.011,v.r0*.45);
+      for(let k=0;k<L;k++){
+        const [q,n]=onSurf(p);if(nearEye(q))break;tw.push(new T.Vector3(...add(q,n,r*.35*(1-k/L)+.002)));
+        dir=nrm(add(dir,[(R()-.5)*.8,(R()-.5)*.8,(R()-.5)*.8]));dir=nrm(sub(dir,mul(n,dot(dir,n))));
+        p=add(q,dir,.055+R()*.03);
+      }
+      if(tw.length>2)geos.push(SK.tube(tw,u=>r*(1-u*.8),tw.length*3,3));
+    }
+    await slice();
+  }
+  if(geos.length){
+    const g=K.merge(geos),pa=g.attributes.position,rg=new Float32Array(pa.count*4);
+    for(let i=0;i<pa.count;i++){region(pa.getX(i),pa.getY(i),pa.getZ(i),reg);rg.set(reg,i*4);if((i&2047)===2047)await slice();}
+    g.setAttribute('aR',new T.BufferAttribute(rg,4));
+    const m=new T.Mesh(g,artM);m.frustumCulled=false;heart.add(m);
+  }
+}
+
+/* ---------- the eye: wet, bloodshot, a brown iris; it follows you and, now and then, blinks ---------- */
+const eyeU={uPup:{value:.2}};
+const eyeM=new T.MeshPhysicalMaterial({color:0xffffff,roughness:.4,metalness:0,clearcoat:1,clearcoatRoughness:.03,envMapIntensity:.7});
+eyeM.onBeforeCompile=sh=>{Object.assign(sh.uniforms,HU,eyeU);
+  sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vEP;').replace('#include <begin_vertex>','#include <begin_vertex>\nvEP=position;');
+  sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vEP;uniform float uPup;\n'+HGL)
+    .replace('#include <color_fragment>',`#include <color_fragment>
+      vec3 ed=normalize(vEP);float ir=acos(clamp(ed.z,-1.,1.)),an=atan(ed.y,ed.x);
+      vec3 sc=vec3(.62,.52,.44)*(.82+.25*hN(ed*6.));
+      float vn=max(smoothstep(.93,.99,hR(ed*vec3(5.,5.,3.)+1.)),smoothstep(.95,.995,hR(ed*11.+4.))*.8);
+      sc=mix(sc,vec3(.3,.025,.02),min(1.,vn+.25)*smoothstep(.5,1.3,ir));
+      sc*=mix(1.,.25,smoothstep(.75,1.5,ir));
+      vec3 iv=vec3(.16,.17,.13)*(.45+.9*hN(vec3(an*7.,ir*28.,3.)))*(.55+.7*smoothstep(.26,.48,ir));
+      iv=mix(iv,vec3(.01,.007,.005),smoothstep(.4,.5,ir));
+      vec3 ecol=mix(iv,sc,smoothstep(.49,.53,ir));
+      ecol=mix(vec3(.002),ecol,smoothstep(uPup-.015,uPup+.012,ir));
+      diffuseColor.rgb=ecol;`)
+    .replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor=mix(.22,.48,smoothstep(.45,.6,acos(clamp(normalize(vEP).z,-1.,1.))));');};
+eyeM.customProgramCacheKey=()=>'heartEye';
+const lidM=new T.MeshPhysicalMaterial({color:new T.Color(.1,.011,.013),roughness:.62,clearcoat:1,clearcoatRoughness:.1,sheen:.18,sheenRoughness:.45,sheenColor:new T.Color(0x6a0c1c),envMapIntensity:.22,side:T.DoubleSide});
+EYE.forEach(e=>{
+  const g=new T.Group();g.position.set(...e.c);
+  g.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(new T.Vector3(...e.u),new T.Vector3(...e.v),new T.Vector3(...e.n)));
+  const ball=new T.Mesh(new T.SphereGeometry(e.re,MOB?24:32,MOB?16:24),eyeM);g.add(ball);
+  const lid=new T.Mesh(new T.SphereGeometry(e.re*1.05,MOB?20:28,10,0,Math.PI*2,0,Math.PI/2),lidM);g.add(lid);
+  heart.add(g);region(...e.c,reg);
+  Object.assign(e,{g,ball,lid,r:reg.slice(),next:1.5+R()*3,bl:-1,sac:new T.Vector3(),sacT:0,q:new T.Quaternion()});
 });
+/* where the beat carries a point of the wall (the CPU twin of heartBeat) */
+function beatAt(p,n,r,sa,sv,out){
+  const q=sub(p,BC),h=dot(q,VA),rd=sub(q,mul(VA,h)),dep=MN(1,MX(0,-h/1.55)),s=sv*r[0];
+  const ang=s*.23*dep,c=Math.cos(ang),si=Math.sin(ang);
+  let rd2=mul(add(mul(rd,c),crs(VA,rd),si),1-s*(.095+.05*dep));
+  let P2=add(add(BC,VA,h+s*(.12*dep-.035)),rd2);
+  P2=lerp(P2,lerp(RAc,LAc,r[3]),sa*r[1]*.11);
+  out.set(P2[0],P2[1],P2[2]);return ang;
+}
 
-/* ---------- chains wrapped round it, running off into the dark ---------- */
+/* =================================================================
+   BLACK BLOOD — drips from the cut mouths and the apex, ooze that
+   swells out of the open vessels with each beat, strings that hang
+   ================================================================= */
 await slice();
-const iron=K.reveal(new T.MeshPhysicalMaterial({color:0x201b1f,metalness:.9,roughness:.4,envMapIntensity:.9}),U);
-[[V(-5.5,4.2,-2),V(4.8,-3.5,-1.5),.18,0],[V(5,3.8,-3),V(-4.2,-4,-2),-.35,1.1],[V(0,6.5,-2),V(-1,-6,-2.5),.9,2.2]].forEach(([a,b,tilt,ph])=>{
-  const pts=[a];
-  for(let i=0;i<=10;i++){const u=i/10*Math.PI*1.7+ph;const x=Math.cos(u)*1.12,z=Math.sin(u)*1.02;pts.push(V(x,Math.sin(u+tilt)*.25+tilt*.3,z).applyAxisAngle(V(1,0,0),tilt).applyAxisAngle(V(0,0,1),tilt*.7));}
-  pts.push(b);
-  scene.add(K.chain(new T.CatmullRomCurve3(pts,false,'centripetal'),.05,iron));
+const oilM=o=>{const m=new T.MeshPhysicalMaterial({color:0x020103,roughness:.16,metalness:0,clearcoat:1,clearcoatRoughness:.04,envMapIntensity:1.1});
+  if(o)m.onBeforeCompile=o;m.customProgramCacheKey=()=>'heartOil'+(o?o.key:'');if(FX&&FX.rim)FX.rim(m,0x7a5cff,3,.32);return m;};
+const apexP=SK.hit(F,[HF(.1,-1.47,.04)[0],-2.2,HF(.1,-1.47,.04)[2]],[0,1,0],1.6);
+const DRIP=[];   /* origin, rate */
+CUTS.forEach(k=>{
+  if(k.dir[1]<-.5){DRIP.push([add(k.tip,k.dir,.01),.2],[add(add(k.tip,k.u,k.rl*.5),k.dir,.01),.13]);}
+  else if(ab(k.dir[1])<.5){const dn=nrm(sub([0,-1,0],mul(k.dir,-k.dir[1])));DRIP.push([add(add(k.tip,dn,k.r*.92),k.dir,-.01),.16]);}
 });
+DRIP.push([apexP,.3],[add(apexP,[.02,.01,-.02]),.21],[apexP,.14],[add(apexP,[-.03,.02,.01]),.25]);
+[[-.5,-.62,.36],[-.95,-.08,-.08],[.95,-.3,-.25]].forEach(q=>{DRIP.push([SK.hit(F,[q[0],q[1]-1,q[2]],[0,1,0],1.2),.12+R()*.08]);});
+const NDR=DRIP.length*(MOB?1:2);
+{
+  const g0=new T.SphereGeometry(1,MOB?7:9,MOB?5:7);
+  {const p=g0.attributes.position;for(let i=0;i<p.count;i++){const y=p.getY(i),k=y>0?1-y*.72:1;p.setXYZ(i,p.getX(i)*k,y>0?y*1.7:y,p.getZ(i)*k);}g0.computeVertexNormals();}
+  const g=new T.InstancedBufferGeometry();g.index=g0.index;g.setAttribute('position',g0.attributes.position);g.setAttribute('normal',g0.attributes.normal);
+  const aO=new Float32Array(NDR*3),aP=new Float32Array(NDR*4);
+  for(let i=0;i<NDR;i++){const d=DRIP[i%DRIP.length];aO.set(d[0],i*3);aP.set([R(),d[1]*(.75+R()*.5),.03+R()*.022,.8+R()*.6],i*4);}
+  g.setAttribute('aO',new T.InstancedBufferAttribute(aO,3));g.setAttribute('aP',new T.InstancedBufferAttribute(aP,4));
+  g.instanceCount=NDR;
+  const sh=sh=>{sh.uniforms.uT=HU.uT;
+    sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nuniform float uT;attribute vec3 aO;attribute vec4 aP;')
+      .replace('#include <beginnormal_vertex>',`float life=fract(uT*aP.y+aP.x),sz=aP.z,st=1.,yo=0.;
+        if(life<.5){float k=life/.5;sz*=.2+.8*k*k;st=1.+k*k*1.6;yo=-sz*st*.55;}
+        else{float tf=(life-.5)*aP.w*2.;yo=-sz*1.4-2.6*tf*tf;st=1.+min(tf*5.,3.2);sz*=1.-smoothstep(.8,1.,life);}
+        vec3 objectNormal=normalize(vec3(normal.x*st,normal.y,normal.z*st));`)
+      .replace('#include <begin_vertex>','vec3 transformed=aO+vec3(position.x*sz,position.y*sz*st+yo,position.z*sz);');};
+  sh.key='drip';
+  const dm=new T.Mesh(g,oilM(sh));dm.frustumCulled=false;scene.add(dm);
+}
+/* ooze in the upturned mouths, swelling with the beat */
+const OOZE=[];
+CUTS.forEach(k=>{if(k.dir[1]>.5){const m=new T.Mesh(new T.SphereGeometry(k.rl*.98,16,10),oilM());m.position.set(...add(k.tip,k.dir,-.06));
+  m.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),new T.Vector3(...k.dir));m.userData.k=R()*.6;heart.add(m);OOZE.push(m);}});
+/* strings of it hanging, stretched */
+{
+  const strM=oilM(Object.assign(sh=>{sh.uniforms.uT=HU.uT;sh.uniforms.uSV=HU.uSV;
+    sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nuniform float uT,uSV;')
+      .replace('#include <begin_vertex>',`#include <begin_vertex>
+        float _u=uv.x*uv.x,_ph=dot(position,vec3(3.1,0.,5.7));
+        transformed.x+=sin(uT*1.1+_ph)*.07*_u;transformed.z+=cos(uT*.9+_ph*1.3)*.06*_u;
+        transformed.y-=_u*(.05+uSV*.06);`);},{key:'str'}));
+  const hang=(o,Ln,r)=>{const pts=[];for(let i=0;i<=6;i++){const u=i/6;pts.push(new T.Vector3(o[0]+Math.sin(u*2.1)*.02,o[1]-u*Ln,o[2]+Math.sin(u*1.7)*.015));}
+    const m=new T.Mesh(SK.tube(pts,u=>r*(1-u*.7)+(u>.9?(u-.9)*r*9:0),40,6),strM);m.frustumCulled=false;heart.add(m);};
+  hang(apexP,.9,.012);hang(add(apexP,[.03,0,-.02]),.5,.008);
+  const da=CUTS.find(k=>k.id==='ao');if(da)hang(add(da.tip,da.dir,.02),1.3,.016);
+  const lp=CUTS.find(k=>k.id==='lpa');if(lp)hang(add(lp.tip,[0,-lp.r*.9,0]),.7,.009);
+}
 
-/* ---------- black blood falling from the apex; violet motes ---------- */
+/* =================================================================
+   THE VOID — tendrils of it reaching in, threads strained toward it,
+   a shroud of black smoke, the vortex behind, ash
+   ================================================================= */
 await slice();
-const apex=shape(V(-.2,-1,0).normalize(),new T.Vector3());
-const drip=K.motes(MOB?40:80,U,{color:0x2a0306,k:1,size:26,area:[.06,3,.06],y0:0,speed:.16,fall:true,blend:'normal',alpha:.95});
-heart.updateMatrixWorld(true);const apexW=heart.localToWorld(apex.clone());drip.position.set(apexW.x,apexW.y-3,apexW.z);scene.add(drip);
-scene.add(K.motes(MOB?120:260,U,{color:0x9a7aff,k:1.5,size:20,area:[5,5,4],y0:-2.5,speed:.03,swirl:.25}));
+/* smoke: tendrils of black smoke reaching in from the dark onto what it has eaten,
+   wisps rising off it — camera-facing ribbons, eroded by noise, flowing */
+{
+  const smM=new T.ShaderMaterial({uniforms:HU,transparent:true,depthWrite:false,
+    vertexShader:`${HGL}
+      attribute vec3 aT;attribute vec4 aW;varying vec2 vW;varying float vSd;
+      void main(){float u=aW.y,w=(1.-u)*(1.-u);vec3 p=position;
+        p+=vec3(sin(uT*.31+p.y*1.1+aW.w*7.),sin(uT*.27+p.z*1.3+aW.w*5.),cos(uT*.29+p.x*.9+aW.w*3.))*.3*w*aW.w;
+        vec4 mv=modelViewMatrix*vec4(p,1.);vec3 tv=normalize((modelViewMatrix*vec4(aT,0.)).xyz);
+        vec3 sd=normalize(cross(tv,normalize(mv.xyz)));mv.xyz+=sd*aW.x*aW.z;
+        vW=vec2(aW.x,u);vSd=aW.w;gl_Position=projectionMatrix*mv;}`,
+    fragmentShader:`${HGL}
+      varying vec2 vW;varying float vSd;
+      void main(){float e=1.-abs(vW.x),u=vW.y;
+        float fl=uT*(.16+vSd*.08);
+        float n=hN(vec3(u*7.-fl*3.,vW.x*1.3,vSd*17.))*.6+hN(vec3(u*17.-fl*6.,vW.x*2.7,vSd*9.+4.))*.3+hN(vec3(u*41.-fl*9.,vW.x*5.,vSd*3.))*.1;
+        float m=n*.9+e*.55-.35;
+        float a=smoothstep(.12,.5,m)*smoothstep(0.,.25,e)*smoothstep(0.,.18,u)*smoothstep(1.,.9,u);
+        float edge=smoothstep(.1,.25,m)*(1.-smoothstep(.25,.45,m));
+        vec3 c=vec3(.002,.001,.004)+vec3(.35,.18,.9)*edge*.03;
+        gl_FragColor=vec4(c,a*.75);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`});
+  const P3=[],T3=[],W4=[],IX=[];let base=0;
+  function ribbon(pts,w0,w1,seg,sd){
+    const c=new T.CatmullRomCurve3(pts,false,'centripetal'),p=new T.Vector3(),tg=new T.Vector3();
+    for(let i=0;i<=seg;i++){const u=i/seg;c.getPointAt(u,p);c.getTangentAt(u,tg);const w=w0+(w1-w0)*u;
+      for(const sx of [-1,1]){P3.push(p.x,p.y,p.z);T3.push(tg.x,tg.y,tg.z);W4.push(sx,u,w,sd);}}
+    for(let i=0;i<seg;i++){const a=base+i*2;IX.push(a,a+2,a+1,a+1,a+2,a+3);}
+    base+=(seg+1)*2;
+  }
+  const at=VSEED.map(v=>[v.x,v.y,v.z]);
+  const n=MOB?7:13;
+  for(let i=0;i<n;i++){
+    const sp=at[i%at.length],out=nrm(sub(sp,[.1,.2,0]));
+    if(i<9){   /* reaching in from far off */
+      const far=add(add(sp,out,2.6+R()*1.6),[(R()-.5)*1.6,(R()-.5)*1.4,-1-R()*1.5]);
+      const mid=add(lerp(far,sp,.55),[(R()-.5)*.9,(R()-.5)*.9,(R()-.5)*.9]);
+      ribbon([far,mid,add(sp,out,.4),add(sp,out,.04)].map(q=>new T.Vector3(...q)),.38,.13+R()*.07,40,R());
+    }else{     /* rising off it */
+      const a0=add(sp,out,.05),up=add(add(a0,out,.6),[(R()-.5)*.6,1.2+R()*.8,(R()-.5)*.6]);
+      ribbon([a0,add(lerp(a0,up,.4),[(R()-.5)*.4,0,(R()-.5)*.4]),up].map(q=>new T.Vector3(...q)),.12,.55,24,R());
+    }
+  }
+  const g=new T.BufferGeometry();
+  g.setAttribute('position',new T.Float32BufferAttribute(P3,3));g.setAttribute('aT',new T.Float32BufferAttribute(T3,3));g.setAttribute('aW',new T.Float32BufferAttribute(W4,4));g.setIndex(IX);
+  const sm=new T.Mesh(g,smM);sm.frustumCulled=false;sm.renderOrder=4;heart.add(sm);
+}
+/* threads: small arteries dragged out into the dark, strained; two have torn */
+{
+  const vibM=new T.MeshPhysicalMaterial({color:0x2a0406,roughness:.5,clearcoat:.4,clearcoatRoughness:.3,envMapIntensity:.3});
+  vibM.onBeforeCompile=sh=>{sh.uniforms.uT=HU.uT;sh.uniforms.uSV=HU.uSV;
+    sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nuniform float uT,uSV;varying float vTu;')
+      .replace('#include <begin_vertex>',`#include <begin_vertex>
+        float _e=sin(3.14159*uv.x);vTu=uv.x;
+        transformed+=vec3(sin(uT*41.+uv.x*9.),cos(uT*37.+uv.x*7.),sin(uT*29.))*_e*(.004+uSV*.012);`);
+    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying float vTu;')
+      .replace('#include <color_fragment>','#include <color_fragment>\ndiffuseColor.rgb*=1.-smoothstep(.12,.55,vTu)*.97;');};
+  vibM.customProgramCacheKey=()=>'heartThread';
+  const n=MOB?5:9;
+  for(let i=0;i<n;i++){
+    const ph=(i/n)*Math.PI*2+R()*.5,el=(R()-.5)*1.6;
+    const d=nrm([Math.cos(ph)*Math.cos(el),Math.sin(el)*.8,-.35-Math.abs(Math.sin(ph))*Math.cos(el)*.7]);
+    const sp=SK.hit(F,add([0,-.1,0],d,2),mul(d,-1),2);
+    const torn=i%4===3;
+    const far=add(sp,d,torn?.75+R()*.3:2.4+R()*1.8);
+    const pts=[];for(let k=0;k<=8;k++){const u=k/8;const q=lerp(sp,far,u);q[1]-=Math.sin(u*Math.PI)*(torn?.25:.12)+(torn?u*u*.35:0);pts.push(new T.Vector3(...q));}
+    const r0=.014+R()*.009,g=SK.tube(pts,u=>r0*(1-u*.65)*(u<.06?1+(.06-u)*14:1),torn?24:48,MOB?4:5);
+    const m=new T.Mesh(g,vibM);m.frustumCulled=false;heart.add(m);
+    if(torn){const e=pts[8];for(let f=0;f<3;f++){const q=[e,new T.Vector3(e.x+(R()-.5)*.08,e.y-.08-R()*.08,e.z+(R()-.5)*.08),new T.Vector3(e.x+(R()-.5)*.14,e.y-.2-R()*.12,e.z+(R()-.5)*.14)];
+      const fm=new T.Mesh(SK.tube(q,r0*.35,12,4),vibM);fm.frustumCulled=false;heart.add(fm);}}
+  }
+}
+/* the shroud: black smoke clinging round it, thickest where the void is — two drifting layers */
+let shroud=[],shroudG=null;
+{
+  const mk=(lay)=>new T.ShaderMaterial({uniforms:HU,transparent:true,depthWrite:false,
+    vertexShader:`${HGL}
+      attribute vec4 aR;
+      varying vec3 vN,vV,vOP;varying float vS;
+      void main(){vec3 p=position,n=normal;heartBeat(p,n,aR);
+        float vm=voidF(position);
+        float band=exp(-pow(dot(position-vec3(-.1,-.6,.1),normalize(vec3(.42,.85,-.25)))/.3,2.));
+        float s=clamp((vm-.3)*2.,0.,1.)*.85+band*.35;
+        vS=s;vOP=position;
+        p+=n*(${lay?'.1':'.03'}+.12*hN(position*1.9+vec3(0.,-uT*.06,uT*.04)+${lay*7}.)+.13*s);
+        vec4 mv=modelViewMatrix*vec4(p,1.);vN=normalize(normalMatrix*n);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}`,
+    fragmentShader:`${HGL}
+      varying vec3 vN,vV,vOP;varying float vS;
+      void main(){
+        vec3 q=vOP+vec3(${lay*3.1},0.,${lay*1.7});
+        vec3 fl=vec3(0.,-uT*.08,uT*.04);
+        vec3 wq=q*2.4+fl+(vec3(hN(q*1.3+fl),hN(q*1.3+fl+5.2),hN(q*1.3+fl+9.1))-.5)*1.4;
+        float n=hN(wq)*.5+hN(wq*2.3)*.3+hN(wq*5.4-fl*2.)*.2;
+        float m=vS+(n-.5)*1.5;
+        float a=smoothstep(.45,.9,m);
+        float fr=1.-abs(dot(normalize(vN),normalize(vV)));
+        vec3 c=vec3(.0025,.0012,.005)+vec3(.3,.15,.8)*smoothstep(.4,.55,m)*(1.-smoothstep(.55,.75,m))*.025;
+        gl_FragColor=vec4(c,a*(.45+.4*fr)*${lay?'.7':'.85'});
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`});
+  const sg=SK.build(F,[-1.15,-1.32,-1.2],[1.35,2.42,.98],MOB?.09:.085,{ao:0});shroudG=sg;
+  (MOB?[0]:[0,1]).forEach(l=>{const m=new T.Mesh(sg,mk(l));m.visible=false;m.renderOrder=3+l;m.frustumCulled=false;heart.add(m);shroud.push(m);});
+}
+/* the vortex behind it: nothing in the middle, violet light bent into a ring, dragged in */
+const vxU={uC:{value:new T.Vector2()},uAsp:{value:1},uR:{value:.4},uT:HU.uT,uB:{value:0}};
+const vortex=new T.Mesh(new T.PlaneGeometry(2,2),new T.ShaderMaterial({uniforms:vxU,depthWrite:false,depthTest:false,
+  vertexShader:'varying vec2 vP;void main(){vP=position.xy;gl_Position=vec4(position.xy,.9999,1.);}',
+  fragmentShader:`uniform vec2 uC;uniform float uAsp,uR,uT,uB;varying vec2 vP;
+    float hH(vec3 p){p=fract(p*.3183099+.1);p*=17.;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
+    float hN(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*(3.-2.*f);
+     return mix(mix(mix(hH(i),hH(i+vec3(1,0,0)),f.x),mix(hH(i+vec3(0,1,0)),hH(i+vec3(1,1,0)),f.x),f.y),
+                mix(mix(hH(i+vec3(0,0,1)),hH(i+vec3(1,0,1)),f.x),mix(hH(i+vec3(0,1,1)),hH(i+vec3(1,1,1)),f.x),f.y),f.z);}
+    void main(){
+      vec2 d=vP-uC;d.x*=uAsp;
+      float r=length(d)/uR,a=atan(d.y,d.x);
+      float lr=log(max(r,.05));
+      float sw=a+uT*.03-lr*1.9;
+      vec3 q=vec3(cos(sw)*1.6,sin(sw)*1.6,lr*2.4-uT*.05);
+      float n=hN(q*1.2)*.55+hN(q*2.9+3.)*.3+hN(q*7.1)*.15;
+      float streak=smoothstep(.5,.9,n);
+      float wob=(hN(vec3(cos(a)*1.8,sin(a)*1.8,uT*.08))-.5)*.08;
+      float rr=r-1.-wob-uB*.02;
+      float ring=(exp(-rr*rr/.0009)*.8+exp(-rr*rr/.014)*.3)*(.45+.55*smoothstep(.3,.7,hN(vec3(cos(a)*3.,sin(a)*3.,uT*.05))));
+      float dop=.35+.65*pow(.5+.5*cos(a-2.3),1.5);
+      float outer=smoothstep(.97,1.1,r);
+      vec3 vio=vec3(.4,.22,1.),red=vec3(.55,.05,.12);
+      vec3 col=vec3(.0012,.0009,.0022);
+      col+=vio*ring*(.13+uB*.1)*dop;
+      col+=mix(vio,red,smoothstep(1.2,2.8,r))*streak*outer*exp(-(r-1.)*1.1)*.06*(.5+.5*dop);
+      col+=vio*exp(-max(r-1.,0.)*2.6)*outer*.02;
+      col=mix(vec3(.0012,.0009,.0022)+vio*(.008+.045*smoothstep(.15,1.,r)*(.6+.4*streak)),col,smoothstep(.9,.99,r));
+      col*=mix(.4,1.,smoothstep(-.8,-.15,vP.y));
+      gl_FragColor=vec4(col,1.);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+    }`}));
+vortex.frustumCulled=false;vortex.renderOrder=-10;scene.add(vortex);
+/* ash, pulled round and in */
+{
+  const n=MOB?160:420,seed=new Float32Array(n*4);
+  for(let i=0;i<n;i++){seed[i*4]=R();seed[i*4+1]=R();seed[i*4+2]=R();seed[i*4+3]=R();}
+  const g=new T.BufferGeometry();g.setAttribute('position',new T.BufferAttribute(new Float32Array(n*3),3));g.setAttribute('aS',new T.BufferAttribute(seed,4));
+  const am=new T.ShaderMaterial({uniforms:{uT:HU.uT,uPix:{value:Math.min(devicePixelRatio,2)}},transparent:true,depthWrite:false,
+    vertexShader:`uniform float uT,uPix;attribute vec4 aS;varying float vA;varying float vK;
+      void main(){float life=fract(aS.x+uT*(.012+aS.y*.012));
+        float r=mix(6.5,.9,life);float a=aS.z*6.2832+uT*(.03+.2/r)+life*2.2;
+        vec3 p=vec3(cos(a)*r,(aS.w-.5)*1.4*r*.35+sin(uT*.2+aS.z*9.)*.3,sin(a)*r*.55-1.2);
+        vA=smoothstep(0.,.25,life)*smoothstep(1.,.8,life);vK=aS.y;
+        vec4 mv=modelViewMatrix*vec4(p,1.);
+        gl_PointSize=min((2.+aS.w*5.)*uPix*6./max(-mv.z,1.),10.*uPix);gl_Position=projectionMatrix*mv;}`,
+    fragmentShader:`varying float vA;varying float vK;
+      void main(){vec2 c=gl_PointCoord-.5;float d=length(c*vec2(1.,1.6));float m=smoothstep(.5,.15,d);
+        vec3 col=vK>.93?vec3(.55,.35,1.)*1.6:vec3(.13,.115,.12);
+        gl_FragColor=vec4(col,m*vA*(vK>.93?.9:.55));}`});
+  const ash=new T.Points(g,am);ash.frustumCulled=false;ash.onBeforeRender=r=>{am.uniforms.uPix.value=Math.min(devicePixelRatio,2)*(r.__pxk||1);};scene.add(ash);
+}
+/* the whisper, barely there */
+const ws=K.words(['لا شيء يستحق…','nothing matters','…لا شيء'],0x8a70ff,{uKzReveal:{value:1}});
+ws.forEach(w=>{w.scale.set(1.5,.28,1);w.material.fog=false;scene.add(w);});
 
-/* ---------- a halo of the void behind it ---------- */
-const haloU={uB:{value:0},uT:U.uKzTime};
-const halo=new T.Mesh(new T.PlaneGeometry(16,16),new T.ShaderMaterial({uniforms:haloU,transparent:true,depthWrite:false,blending:T.AdditiveBlending,fog:false,
-  vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-  fragmentShader:`uniform float uB,uT;varying vec2 vUv;void main(){float d=length(vUv-.5)*2.;
-    float h=pow(max(0.,1.-d),3.)*(.22+uB*.5);float ring=smoothstep(.04,0.,abs(d-.33-uB*.08))*uB*.4;
-    vec3 c=mix(vec3(.35,.18,.7),vec3(.6,.08,.15),.5+.5*sin(uT*.3))*(h+ring);gl_FragColor=vec4(c,1.);}`}));
-halo.position.set(0,.1,-3.5);scene.add(halo);
-
-/* ---------- the whisper ---------- */
-const ws=K.words(['لا شيء يستحق…','nothing matters','…لا شيء'],0x9a7aff,U);ws.forEach(w=>{w.scale.set(1.9,.36,1);scene.add(w);});
+/* ---------- light: a dim warm key, cold violet from behind, deep shadow ---------- */
+scene.add(new T.HemisphereLight(0x120b18,0x4a0709,.26));
+const key=new T.DirectionalLight(0xffc6bc,1.45);key.position.set(-4,3.4,2.4);scene.add(key);
+const rimA=new T.DirectionalLight(0x8e70ff,1.2);rimA.position.set(3.4,2.6,-4);scene.add(rimA);
+const rimB=new T.DirectionalLight(0x5a3cff,.75);rimB.position.set(-3.8,.4,-3.2);scene.add(rimB);
 
 /* ---------- size, input ---------- */
-function size(){const w=canvas.clientWidth||innerWidth,h=canvas.clientHeight||innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+function size(){const w=canvas.clientWidth||innerWidth,h=canvas.clientHeight||innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();dirty=true;}
+let dirty=true;
 size();addEventListener('resize',size,{passive:true});addEventListener('quality-drop',()=>{renderer.setPixelRatio(DPR());size();});
-let onScreen=false;new IntersectionObserver(es=>es.forEach(en=>{onScreen=en.isIntersecting}),{threshold:0}).observe(band);
+let onScreen=false;new IntersectionObserver(es=>es.forEach(en=>{onScreen=en.isIntersecting;dirty=true;}),{threshold:0}).observe(band);
 let mx=0,my=0,tmx=0,tmy=0;addEventListener('pointermove',e=>{tmx=e.clientX/innerWidth*2-1;tmy=e.clientY/innerHeight*2-1},{passive:true});
+/* scroll progress through the chapter (cached geometry; read only after a scroll) */
+const PERF=window.AOSO_PERF;let prog=0,progDirty=true;
+addEventListener('scroll',()=>{progDirty=true;},{passive:true});
+function readProg(){
+  if(!progDirty)return prog;progDirty=false;
+  let top,h;if(PERF&&PERF.geo){const r=PERF.geo.rect(band);top=r.top;h=r.height;}else{const r=band.getBoundingClientRect();top=r.top;h=r.height;}
+  prog=Math.max(0,Math.min(1,-top/Math.max(1,h-innerHeight)));return prog;
+}
 
-/* ---------- the beat: lub… dub… silence ---------- */
-function beat(t){const x=(t%1.35)/1.35;const b=(c,w)=>Math.exp(-Math.pow((x-c)/w,2));return b(.08,.035)+b(.28,.045)*.72;}
-const clock=new T.Clock();let t=0,drawn=false;
-const camT=new T.Vector3(0,-.18,0),tmp=new T.Vector3(),camLocal=new T.Vector3(),Z=new T.Vector3(0,0,1);
-function frame(){
-  requestAnimationFrame(frame);
-  if(!onScreen||document.hidden)return;
-  const dt=Math.min(.05,clock.getDelta());t+=CALM?0:dt;
-  if(CALM&&drawn)return;
-  const b=CALM?.3:beat(t);
-  U.uKzTime.value=t;U.uKzPulse.value=b;haloU.uB.value=b;
-  heart.scale.set(1-b*.055,1-b*.035,1-b*.05);
-  flash.intensity=b*4.5;
-  mx+=(tmx-mx)*.04;my+=(tmy-my)*.04;
-  const narrow=camera.aspect<1?Math.pow(1/camera.aspect,.6):1;
-  const ang=Math.sin(t*.12)*.3+mx*.25,dist=10.6*narrow;
-  camera.position.set(Math.sin(ang)*dist,.35+Math.sin(t*.09)*.25-my*.35,Math.cos(ang)*dist);
-  camera.position.x+=(Math.random()-.5)*.012*b;camera.position.y+=(Math.random()-.5)*.012*b;
-  camera.lookAt(camT);
-  /* eyes: open and shut on their own, always turning to find you */
-  camLocal.copy(camera.position);heart.worldToLocal(camLocal);
-  eyes.forEach((g,i)=>{
-    const u=g.userData;
-    const want=Math.sin(t*.37+u.ph)>-.25?1:0;
-    u.open+=(want-u.open)*Math.min(1,dt*(want?1.4:9));
-    const blink=Math.pow(Math.max(0,Math.sin(t*1.9+u.ph*3)),80);
-    const o=Math.max(0,u.open-blink);
-    u.L.userData.set(o);
-    /* turn toward you, but never further than the socket allows */
-    tmp.copy(camLocal).sub(g.position).normalize().lerp(u.n,.4).normalize();
-    u.E.quaternion.setFromUnitVectors(Z,tmp);u.L.quaternion.copy(u.E.quaternion);
+/* ---------- the beat: lub… dub… and sometimes nothing ---------- */
+const eyeB=new T.Matrix4(),eyeU0=new T.Vector3(),eyeV0=new T.Vector3(),eyeN0=new T.Vector3(),eyeQ=new T.Quaternion(),eyeA=new T.Vector3(),eyeL=new T.Vector3(),eyeZ=new T.Vector3(0,0,1);
+let bT=0,bP=1.18,bStrong=1,bSkip=false,quiver=0,shake=0;
+function beat(dt){
+  bT+=dt;
+  if(bT>=bP){bT-=bP;
+    if(!bSkip&&R()<.1){bSkip=true;bStrong=0;bP=2.2;}                 /* a missed beat, the long wait */
+    else{bStrong=bSkip?1.4:1;bSkip=false;bP=1.1+R()*.14;}             /* …and the hard one after it */
+    if(R()<.1)quiver=1.3;
+  }
+  const x=bT;
+  const sa=bStrong>0?Math.exp(-Math.pow((x-.07)/.05,2))*MN(1,bStrong):0;
+  let sv=0;
+  if(bStrong>0){sv=ss(.14,.25,x)*(1-ss(.42,.58,x))-.2*Math.exp(-Math.pow((x-.66)/.055,2));sv*=bStrong;}
+  shake+=((x>.15&&x<.2?1:0)+(x>.55&&x<.59?.6:0))*bStrong*dt*14;
+  return [sa,sv];
+}
+const clock=new T.Clock();let t=0,drawn=false,lastVeil=null;
+const LOOK=new T.Vector3(),tmpV=new T.Vector3(),hc=new T.Vector3(.08,-.05,0),kd=new T.Vector3(),rd=new T.Vector3();
+const inv=new T.Matrix4();
+function place(){
+  const v=HX.view,asp=camera.aspect,tf=Math.tan(camera.fov*D2R/2);
+  const fit=1.4/(tf*Math.min(asp,1.6)*.92);
+  let dist=MX(10.6,fit)*(1-.09*prog);
+  if(v&&v.dist)dist=v.dist;
+  const halfH=dist*tf;
+  const ly=v&&v.look?v.look[1]:.5-(asp<1?.2:.335)*halfH;
+  LOOK.set(v&&v.look?v.look[0]:.1,ly,v&&v.look?v.look[2]:0);
+  const yaw=v&&v.yaw!=null?v.yaw:Math.sin(t*.11)*.26+mx*.2-.08;
+  const pitch=v&&v.pitch!=null?v.pitch:.05+Math.sin(t*.083)*.05-my*.08;
+  camera.position.set(LOOK.x+Math.sin(yaw)*Math.cos(pitch)*dist,LOOK.y+Math.sin(pitch)*dist,LOOK.z+Math.cos(yaw)*Math.cos(pitch)*dist);
+  if(shake>0&&!(v&&v.t!=null)){camera.position.x+=(Math.random()-.5)*.02*shake;camera.position.y+=(Math.random()-.5)*.02*shake;}
+  camera.lookAt(LOOK);
+  camera.updateMatrixWorld();
+  /* vortex centred on the heart, its ring just outside it */
+  tmpV.copy(hc).project(camera);vxU.uC.value.set(tmpV.x,tmpV.y);vxU.uAsp.value=asp;vxU.uR.value=1.55/halfH;
+  inv.copy(camera.matrixWorldInverse);
+  kd.copy(key.position).normalize().transformDirection(inv);HU.uKeyV.value.copy(kd);
+  rd.copy(rimA.position).normalize().transformDirection(inv);HU.uRimV.value.copy(rd);
+}
+function step(dt){
+  const v=HX.view;
+  if(v&&v.t!=null){t=v.t;bT=v.t%1.18;bStrong=1;}else t+=dt;
+  let sa=0,sv=0;
+  if(v&&v.t!=null){[sa,sv]=beat(0);}else [sa,sv]=beat(dt);
+  quiver*=Math.exp(-dt*1.6);shake*=Math.exp(-dt*9);
+  HU.uT.value=t;HU.uSA.value=sa;HU.uSV.value=sv;HU.uQv.value=quiver;vxU.uB.value=MX(0,sv);
+  HU.uVoid.value=.02+.08*prog+.02*Math.sin(t*.07);
+  VSEED.forEach((s,i)=>{s.w=VS0[i]*(1+.07*Math.sin(t*.13+i*1.7));});
+  EYE.forEach(e=>{
+    const ang=beatAt(e.c,e.n,e.r,sa,sv,e.g.position);
+    e.g.quaternion.setFromRotationMatrix(eyeB.makeBasis(eyeU0.set(...e.u),eyeV0.set(...e.v),eyeN0.set(...e.n)));
+    if(ang)e.g.quaternion.premultiply(eyeQ.setFromAxisAngle(eyeA.set(VA[0],VA[1],VA[2]),ang));
+    e.g.updateMatrixWorld();
+    eyeL.copy(camera.position);e.g.worldToLocal(eyeL).normalize();
+    if(t>e.sacT){e.sacT=t+.6+R()*2.2;e.sac.set((R()-.5)*.16,(R()-.5)*.1,0);}
+    eyeL.add(e.sac);
+    const a=Math.acos(MN(1,MX(-1,eyeL.z)));if(a>.5){eyeL.z=0;eyeL.normalize().multiplyScalar(Math.sin(.5));eyeL.z=Math.cos(.5);}
+    eyeL.normalize();e.q.setFromUnitVectors(eyeZ,eyeL);e.ball.quaternion.slerp(e.q,MN(1,dt*9));
+    let cl=.3;
+    if(e.bl<0&&t>e.next)e.bl=0;
+    if(e.bl>=0){e.bl+=dt;const k=e.bl/.3;cl=k<.4?.3+.7*k/.4:k<.55?1:1-.7*MN(1,(k-.55)/.45);if(k>=1){e.bl=-1;e.next=t+2+R()*5;}}
+    e.lid.rotation.x=-1.05+cl*1.55;
   });
-  ws.forEach((w,i)=>{const a=t*.1+i*2.1;w.position.set(Math.cos(a)*2.4,.6+Math.sin(t*.3+i)*.7,Math.sin(a)*1.4);w.material.opacity=Math.max(0,Math.sin(t*.35+i*2.2))*.45;});
+  eyeU.uPup.value=.19+.05*MX(0,sv);
+  OOZE.forEach(m=>{const k=MX(0,sv)*.9+.35+.08*Math.sin(t*1.3+m.userData.k*9);m.scale.set(1,.12+k*.42,1);});
+  mx+=(tmx-mx)*.035;my+=(tmy-my)*.035;
+  ws.forEach((w,i)=>{const a=t*.08+i*2.1;w.position.set(Math.cos(a)*3,.7+Math.sin(t*.25+i)*.6,Math.sin(a)*1.6-.5);w.material.opacity=MX(0,Math.sin(t*.3+i*2.2))*.16;});
+}
+function render(){
+  place();
   drawn=true;
   canvas.__f=(canvas.__f|0)+1;
   FX?FX.draw(renderer,scene,camera):renderer.render(scene,camera);
 }
+function frame(){
+  requestAnimationFrame(frame);
+  if(!onScreen||document.hidden)return;
+  const dt=Math.min(.05,clock.getDelta());
+  readProg();
+  if(CALM){      /* reduced motion: a still heart, drawn again only when something changes */
+    const vl=!!canvas.__veiled;
+    if(drawn&&!dirty&&vl===lastVeil&&!HX.view)return;
+    lastVeil=vl;dirty=false;t=2.6;step(0);HU.uSV.value=0;HU.uSA.value=0;render();return;
+  }
+  if(HX.view&&HX.view.still){      /* test hook: a pinned view is drawn twice, then held */
+    const k=JSON.stringify(HX.view)+prog;if(k===stillK&&stillN>=2)return;if(k!==stillK){stillK=k;stillN=0;}stillN++;
+  }
+  step(dt);render();
+}
+let stillK='',stillN=0;
+/* ---------- while the surface is still being meshed (idle slices, shared with the bestiaries), compile
+   every program and draw one hidden frame: the canvas proves it can paint, nothing compiles on screen ---------- */
+await slice();
+step(0);
+{const v=HX.view;HX.view=null;size();place();HX.view=v;}
+if(FX&&FX.prewarm&&!(canvas.__f|0))await FX.prewarm(renderer,scene,camera);
+/* ---------- wait for the surface to be meshed, then give it its regions ---------- */
+{const tw=performance.now();while(!bodyG.attributes.color){if(performance.now()-tw>90000){console.warn('[HEART] surface never finished');return;}await new Promise(r=>setTimeout(r,60));}}
+{
+  const n=bodyG.attributes.position.count;
+  if(REG.length!==n*4){console.warn('[HEART] region count',REG.length/4,n);REG.length=n*4;}
+  bodyG.setAttribute('aR',new T.BufferAttribute(new Float32Array(REG),4));
+  REG.length=0;
+}
+{const tw=performance.now();while(!shroudG.index){if(performance.now()-tw>60000)break;await new Promise(r=>setTimeout(r,60));}
+ if(shroudG.index){const pa=shroudG.attributes.position,rg=new Float32Array(pa.count*4);
+  for(let i=0;i<pa.count;i++){region(pa.getX(i),pa.getY(i),pa.getZ(i),reg);rg.set(reg,i*4);if((i&1023)===1023)await slice();}
+  shroudG.setAttribute('aR',new T.BufferAttribute(rg,4));shroud.forEach(m=>{m.visible=true;});}}
+const T1=performance.now();
+let tris=0;const TB={};scene.traverse(o=>{if(o.isMesh&&o.geometry){const g=o.geometry,n=(g.index?g.index.count:g.attributes.position.count)/3*(g.isInstancedBufferGeometry?g.instanceCount:1);tris+=n;const k=o.material.type+(o.material.vertexColors?'V':'');TB[k]=Math.round((TB[k]||0)+n);}});
+HX.stats={TB,seeds:VSEED.map(v=>[+v.x.toFixed(2),+v.y.toFixed(2),+v.z.toFixed(2)]),tris:Math.round(tris),bodyTris:bodyG.index.count/3,meshMs:Math.round(T1-T0),grooves:[GA.length,GP.length]};
+
+/* what was still missing (the shroud) compiled too, one more hidden frame, then it shows */
+await slice();
+step(0);{const v=HX.view;HX.view=null;place();HX.view=v;}
+if(FX&&FX.prewarm)await FX.prewarm(renderer,scene,camera);
+HX.stats.readyMs=Math.round(performance.now()-T0);
 frame();
 canvas.classList.add('live');
 canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();});
 window.__HEART_OK=true;
-/* every program compiled and one hidden frame drawn before the band scrolls in */
-await slice();
-if(FX&&FX.prewarm&&!(canvas.__f|0)){camera.position.set(0,.35,10.6);camera.lookAt(camT);camera.updateMatrixWorld();await FX.prewarm(renderer,scene,camera);}
 }
 })();
-
+/*<</HEART>>*/
 /* the two sectors of the Korz */
 KORZ_BESTIARY('expWhisper',{sector:'whisper',kinds:['armor','echo','ruin','silent']});
 KORZ_BESTIARY('expBlood',{sector:'blood',kinds:['eye','hammer','chains','rotten','wolf','priest','god']});
@@ -20333,7 +21221,7 @@ function wrapNode(n,sec){
   AR_RE.lastIndex=0;while((m=AR_RE.exec(v))){const id=AR_MAP.get(m[2]);if(id)hits.push([m.index+m[1].length,m[2].length,id]);}
   if(!hits.length)return 0;
   /* a drop cap (the Saga's first letter) is an ornament: its word stays plain, the next occurrence carries the lore */
-  const dc=!isAr()&&n.parentElement&&n.parentElement.matches('.story-copy p:first-child')&&n===n.parentElement.firstChild;
+  const dc=false;   /* the drop cap is gone, so the opening AOSO is a lore word like the rest */
   hits.sort((a,b)=>a[0]-b[0]);out=D.createDocumentFragment();let c=0;
   for(const h of hits){if(h[0]<last||(dc&&h[0]===0))continue;push(last,h[0]);out.appendChild(makeSpan(h[2],v.substr(h[0],h[1]),sec));last=h[0]+h[1];c++;}
   push(last,v.length);n.parentNode.replaceChild(out,n);return c;

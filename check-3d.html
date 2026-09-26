@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AOSO — 3D check</title>
+<style>
+ body{margin:0;background:#0e0d10;color:#ece7dd;font:15px/1.7 'Segoe UI',Tahoma,sans-serif;padding:36px 22px}
+ .w{max-width:760px;margin:0 auto}
+ h1{font:700 1.4rem/1.2 Georgia,serif;letter-spacing:.06em;margin:0 0 6px}
+ .sub{color:#98938c;font-size:.9rem;margin-bottom:26px}
+ .row{display:flex;gap:14px;align-items:flex-start;padding:13px 0;border-top:1px solid #26242a}
+ .k{width:210px;flex:none;color:#98938c;font-size:.82rem;letter-spacing:.14em;text-transform:uppercase}
+ .v{flex:1;word-break:break-word}
+ .ok{color:#7de89a}.bad{color:#ff8f84}.warn{color:#d9a441}
+ #verdict{margin:26px 0;padding:18px 20px;border-inline-start:3px solid #d9a441;background:rgba(217,164,65,.07);font-size:1rem}
+ #verdict b{display:block;font-size:1.1rem;margin-bottom:8px}
+ canvas{width:100%;height:190px;display:block;margin-top:26px;border:1px solid #26242a;border-radius:4px;background:#000}
+ ol{margin:10px 0 0 18px;padding:0}li{margin:5px 0}
+ code{background:rgba(255,255,255,.07);padding:1px 6px;border-radius:3px}
+</style>
+</head>
+<body><div class="w">
+<h1>AOSO — 3D check</h1>
+<div class="sub">Send Claude a screenshot of this page.</div>
+<div id="out"></div>
+<div id="verdict">running…</div>
+<canvas id="tri"></canvas>
+<script src="three.min.js"></script>
+<script>
+const out=document.getElementById('out');
+function row(k,v,cls){out.insertAdjacentHTML('beforeend','<div class="row"><div class="k">'+k+'</div><div class="v '+(cls||'')+'">'+v+'</div></div>')}
+
+let gl=null,err='';
+try{const c=document.createElement('canvas');gl=c.getContext('webgl2')||c.getContext('webgl')||c.getContext('experimental-webgl')}catch(e){err=e.message}
+let vendor='—',rend='—',ver='—';
+if(gl){
+  try{const d=gl.getExtension('WEBGL_debug_renderer_info');
+    vendor=d?String(gl.getParameter(d.UNMASKED_VENDOR_WEBGL)):'(hidden)';
+    rend=d?String(gl.getParameter(d.UNMASKED_RENDERER_WEBGL)):'(hidden)';
+    ver=String(gl.getParameter(gl.VERSION));}catch(e){}
+}
+const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+row('Browser', navigator.userAgent);
+row('Page opened from', location.protocol==='file:'?'a local file (file://)':location.protocol);
+row('WebGL context', gl?'YES — created':'NO'+(err?' — '+err:''), gl?'ok':'bad');
+row('GPU vendor', vendor);
+row('GPU renderer', rend, /swiftshader|software|llvmpipe/i.test(rend)?'warn':'');
+row('WebGL version', ver);
+row('three.js loaded', window.THREE?('YES — r'+THREE.REVISION):'NO — three.min.js did not load', window.THREE?'ok':'bad');
+row('Reduced motion', reduced?'ON  ← Windows animations are turned off':'off', reduced?'warn':'ok');
+
+let drew=false,rerr='';
+if(gl&&window.THREE){
+  try{
+    const cv=document.getElementById('tri');
+    const r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:false});
+    r.setPixelRatio(Math.min(devicePixelRatio,2));
+    r.setSize(cv.clientWidth,190,false);
+    const sc=new THREE.Scene();sc.background=new THREE.Color(0x0b0a0e);
+    const cam=new THREE.PerspectiveCamera(45,cv.clientWidth/190,.1,50);cam.position.z=4;
+    sc.add(new THREE.HemisphereLight(0xbcc6e0,0x101018,.8));
+    const dl=new THREE.DirectionalLight(0xd9a441,2);dl.position.set(2,3,4);sc.add(dl);
+    const m=new THREE.Mesh(new THREE.TorusKnotGeometry(.85,.3,120,16),
+      new THREE.MeshStandardMaterial({color:0xd9a441,roughness:.3,metalness:.7}));
+    sc.add(m);
+    (function loop(){requestAnimationFrame(loop);m.rotation.x+=.01;m.rotation.y+=.014;r.render(sc,cam);drew=true})();
+  }catch(e){rerr=e.message}
+}
+setTimeout(()=>{
+  const v=document.getElementById('verdict');
+  if(!window.THREE){v.innerHTML='<b class="bad">three.min.js is missing or broken</b>Make sure <code>three.min.js</code> sits next to this file in the same folder.';return}
+  if(!gl){v.innerHTML='<b class="bad">This browser cannot run WebGL</b>That is why the 3D is invisible. Fix it:<ol>'
+      +'<li>Chrome/Edge menu → <b>Settings</b> → <b>System</b></li>'
+      +'<li>Turn ON <b>“Use graphics acceleration when available”</b></li>'
+      +'<li>Restart the browser, then reload the site</li>'
+      +'<li>Still nothing? Open <code>chrome://gpu</code> and send Claude a screenshot of the top block</li></ol>';return}
+  if(!drew||rerr){v.innerHTML='<b class="bad">WebGL exists but rendering failed</b>'+(rerr||'No frame was drawn.');return}
+  if(reduced){v.innerHTML='<b class="warn">WebGL works — but Windows animations are OFF</b>A gold knot should be spinning below. Windows Settings → Accessibility → Visual effects → turn <b>Animation effects</b> ON for the full motion.';return}
+  v.innerHTML='<b class="ok">WebGL works — a gold knot should be spinning below</b>If it spins here but the site is still blank, tell Claude and send the console output (F12 → Console).';
+},900);
+</script>
+</div></body></html>
